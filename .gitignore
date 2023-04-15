@@ -1,0 +1,9 @@
+.DS_Store
+.docker/data/cache/**
+.docker/data/db/**
+.docker/data/files/**
+!.docker/**/.gitkeep
+.env
+.venv/
+.vscode/
+**/__pycache__/
