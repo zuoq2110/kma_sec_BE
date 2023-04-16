@@ -11,8 +11,11 @@ class ModelRepository:
     def __init__(self, local_data_source: Annotated[ModelLocalDataSource, Depends()]) -> None:
         self._local_data_source = local_data_source
 
+    async def create_model(self, model: bytes, metadata: dict) -> str:
+        return await self._local_data_source.insert(model=model, metadata=metadata)
+
     async def get_models(self, page: int, limit: int) -> list[Model]:
-        cursor = await self._local_data_source.get_models(page=page, limit=limit)
+        cursor = await self._local_data_source.find_all(page=page, limit=limit)
         models = []
 
         for document in cursor:
@@ -32,7 +35,7 @@ class ModelRepository:
         )
 
     async def get_model_details(self, model_id: str) -> Optional[ModelDetails]:
-        document = await self._local_data_source.get_model_details(model_id=model_id)
+        document = await self._local_data_source.find_by_id(model_id=model_id)
 
         if document == None:
             return None
@@ -54,7 +57,7 @@ class ModelRepository:
             loss=document['loss'],
             precision=document['precision'],
             recall=document['recall'],
-            f1=document['f-1'],
+            f1=document['f1'],
             history=document['history'],
             created_at=document['created_at']
                 .replace(tzinfo=timezone.utc)
@@ -62,4 +65,4 @@ class ModelRepository:
         )
 
     async def get_model_source(self, model_id: str, format: str = "h5") -> Optional[str]:
-        return await self._local_data_source.get_model_source(model_id=model_id, format=format)
+        return await self._local_data_source.find_source_by_id(model_id=model_id, format=format)
