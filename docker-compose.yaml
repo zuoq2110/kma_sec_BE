@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: kma/ksecurity-server:lastest
+    image: ksecurity/server:lastest
     volumes:
       - .docker/data:/data
     env_file: .env

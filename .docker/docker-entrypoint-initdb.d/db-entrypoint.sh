@@ -1,5 +1,4 @@
 echo 'Creating application user and database...'
-
 mongosh ${DATABASE_NAME} \
   --host localhost \
   --port ${DATABASE_PORT} \

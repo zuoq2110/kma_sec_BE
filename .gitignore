@@ -1,8 +1,5 @@
 .DS_Store
-.docker/data/cache/**
-.docker/data/db/**
-.docker/data/files/**
-!.docker/**/.gitkeep
+.docker/data/
 .env
 .venv/
 .vscode/
