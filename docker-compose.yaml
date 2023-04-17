@@ -4,7 +4,8 @@ services:
   app:
     image: ksecurity/server:lastest
     volumes:
-      - .docker/data:/data
+      - .docker/data/db:/data/db
+      - .docker/data/files:/data/files
     env_file: .env
     ports:
       - '${PORT}:${PORT}'

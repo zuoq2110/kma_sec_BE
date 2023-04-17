@@ -36,8 +36,8 @@ async def disassamble(apk_bytes: bytes, cache_dir: str) -> list:
     await makedirs(name=dir, exist_ok=True)
     await save(data=apk_bytes, path=path)
 
-    packages = await get_content(path=join('app', 'libs', 'androPyTool', 'packages.txt'))
-    classes = await get_content(path=join('app', 'libs', 'androPyTool', 'classes.txt'))
+    packages = await get_content(path=join('libs', 'androPyTool', 'packages.txt'))
+    classes = await get_content(path=join('libs', 'androPyTool', 'classes.txt'))
     apis = []
 
     await decode(apk_path=path, out_dir=out_dir)
@@ -54,7 +54,7 @@ async def disassamble(apk_bytes: bytes, cache_dir: str) -> list:
 
 async def decode(apk_path: str, out_dir: str):
     if not exists(out_dir):
-        lib_path = join('app', 'libs', 'apktool.jar')
+        lib_path = join('libs', 'apktool.jar')
         cmd = f"java -jar {lib_path} d {apk_path} -f --force-manifest --no-assets -o {out_dir} -r"
         proc = await create_subprocess_shell(cmd, stdout=PIPE, stderr=PIPE)
 

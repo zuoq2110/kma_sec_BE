@@ -54,21 +54,22 @@ class AndroidApplicationRepository:
             return None
 
         # Load model
-        model_details = await self._model_repository.get_model_details(model_id=models[0].id)
-        model_source = await self._model_repository.get_model_source(model_id=models[0].id)
+        model_id = models[0].id
+        model_details = await self._model_repository.get_model_details(model_id=model_id)
+        model_source = await self._model_repository.get_model_source(model_id=model_id)
         model = load_model(filepath=model_source)
 
         # Pre-processing
+        model_input = await self._model_repository.get_model_input(model_id=model_id)
         permissions = [permission.split(".")[-1].upper() async for permission in async_generator(permissions)]
         apis = [api["name"] async for api in async_generator(apis)]
-        size = len(model_details.input)
+        size = len(model_input)
         buffer = [0] * size
 
         async for i in async_generator(data=range(size)):
-            label = model_details.input[i]
+            label = model_input[i]
+            buffer[i] = 1 if label in permissions or label in apis else 0
 
-            if label in permissions or label in apis:
-                buffer[i] = 1
         x = np.array(object=[buffer])
         x = np.concatenate((x, np.zeros((x.shape[0], 15))), 1)
         x = x.reshape(x.shape[0], 44, 44, 1)
@@ -78,11 +79,11 @@ class AndroidApplicationRepository:
         y = list(y)
 
         # Post-processing: find the digit that has the highest probability
+        model_output = model_details.output
         highest_probability = max(y)
         index = y.index(highest_probability)
-        malware_type = model_details.output[index]
 
-        return malware_type
+        return model_output[index]
 
     async def get_application_analysis(self, analysis_id: str) -> Optional[AndroidApplicationDetails]:
         id = ObjectId(oid=analysis_id)
