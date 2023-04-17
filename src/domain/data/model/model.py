@@ -21,5 +21,4 @@ class ModelDetails:
     precision: float
     recall: float
     f1: float
-    history: dict
     created_at: str

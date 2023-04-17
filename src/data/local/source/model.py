@@ -16,7 +16,7 @@ class ModelLocalDataSource:
     def __init__(self, database: Annotated[Database, Depends(get_database)]) -> None:
         self._collection = database["models"]
 
-    async def insert(self, model: bytes, metadata: dict) -> ObjectId:
+    def insert(self, model: bytes, metadata: dict) -> ObjectId:
         document = metadata.copy()
 
         # Save the model's document to the database
@@ -30,7 +30,7 @@ class ModelLocalDataSource:
 
         save(data=model, path=join(dir, "model.h5"))
 
-    async def find_all(self, page: int, limit: int) -> Cursor:
+    def find_all(self, page: int, limit: int) -> Cursor:
         skip = (page - 1) * limit
 
         return self._collection \
@@ -42,7 +42,7 @@ class ModelLocalDataSource:
     def find_by_id(self, model_id: str) -> Optional[Any]:
         id = ObjectId(oid=model_id)
 
-        return self._collection.find_one({"_id": id}, {"input": 0})
+        return self._collection.find_one({"_id": id}, {"input": 0, "history": 0})
 
     def find_source_by_id(self, model_id: str, format: str) -> Optional[str]:
         id = ObjectId(oid=model_id)

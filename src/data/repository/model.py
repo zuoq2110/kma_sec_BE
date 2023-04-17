@@ -12,10 +12,10 @@ class ModelRepository:
         self._local_data_source = local_data_source
 
     async def create_model(self, model: bytes, metadata: dict) -> str:
-        return await self._local_data_source.insert(model=model, metadata=metadata)
+        return self._local_data_source.insert(model=model, metadata=metadata)
 
     async def get_models(self, page: int, limit: int) -> list[Model]:
-        cursor = await self._local_data_source.find_all(page=page, limit=limit)
+        cursor = self._local_data_source.find_all(page=page, limit=limit)
         models = []
 
         for document in cursor:
@@ -57,7 +57,6 @@ class ModelRepository:
             precision=document['precision'],
             recall=document['recall'],
             f1=document['f1'],
-            history=document['history'],
             created_at=document['created_at']
                 .replace(tzinfo=timezone.utc)
                 .isoformat()
