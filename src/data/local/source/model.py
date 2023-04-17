@@ -42,17 +42,27 @@ class ModelLocalDataSource:
     async def find_by_id(self, model_id: str) -> Optional[Any]:
         id = ObjectId(oid=model_id)
 
-        return self._collection.find_one(filter={"_id": id})
+        return self._collection.find_one({"_id": id}, {"input": 0, "history": 0})
+
+    async def find_history_by_id(self, model_id: str) -> Optional[Any]:
+        id = ObjectId(oid=model_id)
+        document = self._collection.find_one({"_id": id}, {"history": 1})
+
+        return None if document is None else document["history"]
 
     async def find_source_by_id(self, model_id: str, format: str) -> Optional[str]:
-        document = await self.find_by_id(model_id=model_id)
+        id = ObjectId(oid=model_id)
+        count = self._collection.count_documents({"_id": id}, None, None, limit=1)
 
-        if document == None:
+        if count != 1:
             return None
 
         path = join(sep, "data", "files", model_id, f"model.{format}")
 
-        if not isfile(path):
-            return None
+        return path if isfile(path) else None
 
-        return path
+    async def find_input_by_id(self, model_id: str) -> Optional[list]:
+        id = ObjectId(oid=model_id)
+        document = self._collection.find_one({"_id": id}, {"input": 1})
+
+        return None if document is None else document["input"]

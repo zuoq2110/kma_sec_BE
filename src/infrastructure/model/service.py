@@ -22,6 +22,17 @@ class ModelService():
 
         return model_details
 
+    async def get_model_history(self, model_id: str):
+        model_history = await self._model_repository.get_model_history(model_id=model_id)
+
+        if model_history == None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Model history could not be found!"
+            )
+
+        return model_history
+
     async def get_model_source(self, model_id: str, format: str = "h5"):
         model_source = await self._model_repository.get_model_source(model_id=model_id, format=format)
 
@@ -32,3 +43,14 @@ class ModelService():
             )
 
         return model_source
+
+    async def get_model_input(self, model_id: str):
+        model_input = await self._model_repository.get_model_input(model_id=model_id)
+
+        if model_input == None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Model input could not be found!"
+            )
+
+        return model_input

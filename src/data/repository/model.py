@@ -3,7 +3,7 @@ from os.path import getsize
 from datetime import timezone
 from fastapi import Depends
 from src.data.local import ModelLocalDataSource
-from src.domain.data.model import Model, ModelDetails
+from src.domain.data.model import Model, ModelDetails, ModelHistory
 
 
 class ModelRepository:
@@ -51,18 +51,32 @@ class ModelRepository:
             version=document['version'],
             type=document['type'],
             size=source_size,
-            input=document['input'],
             output=document['output'],
             accuracy=document['accuracy'],
             loss=document['loss'],
             precision=document['precision'],
             recall=document['recall'],
             f1=document['f1'],
-            history=document['history'],
             created_at=document['created_at']
                 .replace(tzinfo=timezone.utc)
                 .isoformat()
         )
 
+    async def get_model_history(self, model_id: str) -> Optional[ModelHistory]:
+        document = await self._local_data_source.find_history_by_id(model_id=model_id)
+
+        return None if document is None else self._as_model_history(document=document)
+
+    def _as_model_history(self, document) -> ModelHistory:
+        return ModelHistory(
+            accuracy=document['accuracy'],
+            val_accuracy=document['val_accuracy'],
+            loss=document['loss'],
+            val_loss=document['val_loss'],
+        )
+
     async def get_model_source(self, model_id: str, format: str = "h5") -> Optional[str]:
         return await self._local_data_source.find_source_by_id(model_id=model_id, format=format)
+
+    async def get_model_input(self, model_id: str) -> Optional[list]:
+        return await self._local_data_source.find_input_by_id(model_id=model_id)
