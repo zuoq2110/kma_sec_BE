@@ -44,6 +44,12 @@ class ModelLocalDataSource:
 
         return self._collection.find_one({"_id": id}, {"input": 0, "history": 0})
 
+    async def find_history_by_id(self, model_id: str) -> Optional[Any]:
+        id = ObjectId(oid=model_id)
+        document = self._collection.find_one({"_id": id}, {"history": 1})
+
+        return None if document is None else document["history"]
+
     async def find_source_by_id(self, model_id: str, format: str) -> Optional[str]:
         id = ObjectId(oid=model_id)
         count = self._collection.count_documents({"_id": id}, None, None, limit=1)

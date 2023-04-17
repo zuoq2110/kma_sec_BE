@@ -3,7 +3,7 @@ from os.path import getsize
 from datetime import timezone
 from fastapi import Depends
 from src.data.local import ModelLocalDataSource
-from src.domain.data.model import Model, ModelDetails
+from src.domain.data.model import Model, ModelDetails, ModelHistory
 
 
 class ModelRepository:
@@ -60,6 +60,19 @@ class ModelRepository:
             created_at=document['created_at']
                 .replace(tzinfo=timezone.utc)
                 .isoformat()
+        )
+
+    async def get_model_history(self, model_id: str) -> Optional[ModelHistory]:
+        document = await self._local_data_source.find_history_by_id(model_id=model_id)
+
+        return None if document is None else self._as_model_history(document=document)
+
+    def _as_model_history(self, document) -> ModelHistory:
+        return ModelHistory(
+            accuracy=document['accuracy'],
+            val_accuracy=document['val_accuracy'],
+            loss=document['loss'],
+            val_loss=document['val_loss'],
         )
 
     async def get_model_source(self, model_id: str, format: str = "h5") -> Optional[str]:

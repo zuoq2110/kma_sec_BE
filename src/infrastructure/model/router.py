@@ -34,6 +34,19 @@ async def get_model_details(
     }
 
 
+@router.get(path="/{model_id}/history", status_code=status.HTTP_200_OK)
+async def get_model_history(
+    model_id: str,
+    service: Annotated[ModelService, Depends()]
+):
+    model_history = await service.get_model_history(model_id=model_id)
+
+    return {
+        "message": "Get model history successfully.",
+        "data": model_history
+    }
+
+
 @router.get(path="/{model_id}/source", status_code=200)
 async def get_model_source(
     model_id: str,

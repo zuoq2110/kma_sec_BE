@@ -22,3 +22,11 @@ class ModelDetails:
     recall: float
     f1: float
     created_at: str
+
+
+@dataclass
+class ModelHistory:
+    accuracy: list[float]
+    val_accuracy: list[float]
+    loss: list[float]
+    val_loss: list[float]
