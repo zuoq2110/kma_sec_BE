@@ -15,8 +15,6 @@ class ModelDetails:
     version: str
     type: str
     size: int
-    input: list[str]
-    output: list[str]
     accuracy: float
     loss: float
     precision: float

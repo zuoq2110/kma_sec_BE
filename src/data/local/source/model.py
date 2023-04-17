@@ -42,7 +42,7 @@ class ModelLocalDataSource:
     async def find_by_id(self, model_id: str) -> Optional[Any]:
         id = ObjectId(oid=model_id)
 
-        return self._collection.find_one(filter={"_id": id})
+        return self._collection.find_one({"_id": id}, {"input": 0, "output": 0})
 
     async def find_source_by_id(self, model_id: str, format: str) -> Optional[str]:
         document = await self.find_by_id(model_id=model_id)
