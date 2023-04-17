@@ -32,3 +32,14 @@ class ModelService():
             )
 
         return model_source
+
+    async def get_model_input(self, model_id: str):
+        model_input = await self._model_repository.get_model_input(model_id=model_id)
+
+        if model_input == None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Model input could not be found!"
+            )
+
+        return model_input

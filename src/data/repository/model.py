@@ -35,7 +35,7 @@ class ModelRepository:
         )
 
     async def get_model_details(self, model_id: str) -> Optional[ModelDetails]:
-        document = await self._local_data_source.find_by_id(model_id=model_id)
+        document = self._local_data_source.find_by_id(model_id=model_id)
 
         if document == None:
             return None
@@ -63,4 +63,7 @@ class ModelRepository:
         )
 
     async def get_model_source(self, model_id: str, format: str = "h5") -> Optional[str]:
-        return await self._local_data_source.find_source_by_id(model_id=model_id, format=format)
+        return self._local_data_source.find_source_by_id(model_id=model_id, format=format)
+
+    async def get_model_input(self, model_id: str) -> Optional[list]:
+        return self._local_data_source.find_input_by_id(model_id=model_id)

@@ -47,3 +47,16 @@ async def get_model_source(
         media_type='application/octet-stream',
         filename=f"model.{format}"
     )
+
+
+@router.get(path="/{model_id}/input", status_code=status.HTTP_200_OK)
+async def get_model_input(
+    model_id: str,
+    service: Annotated[ModelService, Depends()]
+):
+    model_input = await service.get_model_input(model_id=model_id)
+
+    return {
+        "message": "Get model input successfully.",
+        "data": model_input
+    }
