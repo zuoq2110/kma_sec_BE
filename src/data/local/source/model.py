@@ -16,7 +16,7 @@ class ModelLocalDataSource:
     def __init__(self, database: Annotated[Database, Depends(get_database)]) -> None:
         self._collection = database["models"]
 
-    def insert(self, model: bytes, metadata: dict) -> ObjectId:
+    async def insert(self, model: bytes, metadata: dict) -> ObjectId:
         document = metadata.copy()
 
         # Save the model's document to the database
@@ -30,7 +30,7 @@ class ModelLocalDataSource:
 
         save(data=model, path=join(dir, "model.h5"))
 
-    def find_all(self, page: int, limit: int) -> Cursor:
+    async def find_all(self, page: int, limit: int) -> Cursor:
         skip = (page - 1) * limit
 
         return self._collection \
@@ -39,12 +39,12 @@ class ModelLocalDataSource:
             .skip(skip=max(0, skip)) \
             .limit(limit=limit)
 
-    def find_by_id(self, model_id: str) -> Optional[Any]:
+    async def find_by_id(self, model_id: str) -> Optional[Any]:
         id = ObjectId(oid=model_id)
 
         return self._collection.find_one({"_id": id}, {"input": 0, "history": 0})
 
-    def find_source_by_id(self, model_id: str, format: str) -> Optional[str]:
+    async def find_source_by_id(self, model_id: str, format: str) -> Optional[str]:
         id = ObjectId(oid=model_id)
         count = self._collection.count_documents({"_id": id}, None, None, limit=1)
 
@@ -55,7 +55,7 @@ class ModelLocalDataSource:
 
         return path if isfile(path) else None
 
-    def find_input_by_id(self, model_id: str) -> Optional[list]:
+    async def find_input_by_id(self, model_id: str) -> Optional[list]:
         id = ObjectId(oid=model_id)
         document = self._collection.find_one({"_id": id}, {"input": 1})
 

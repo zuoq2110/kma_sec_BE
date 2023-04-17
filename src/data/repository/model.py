@@ -12,10 +12,10 @@ class ModelRepository:
         self._local_data_source = local_data_source
 
     async def create_model(self, model: bytes, metadata: dict) -> str:
-        return self._local_data_source.insert(model=model, metadata=metadata)
+        return await self._local_data_source.insert(model=model, metadata=metadata)
 
     async def get_models(self, page: int, limit: int) -> list[Model]:
-        cursor = self._local_data_source.find_all(page=page, limit=limit)
+        cursor = await self._local_data_source.find_all(page=page, limit=limit)
         models = []
 
         for document in cursor:
@@ -35,7 +35,7 @@ class ModelRepository:
         )
 
     async def get_model_details(self, model_id: str) -> Optional[ModelDetails]:
-        document = self._local_data_source.find_by_id(model_id=model_id)
+        document = await self._local_data_source.find_by_id(model_id=model_id)
 
         if document == None:
             return None
@@ -63,7 +63,7 @@ class ModelRepository:
         )
 
     async def get_model_source(self, model_id: str, format: str = "h5") -> Optional[str]:
-        return self._local_data_source.find_source_by_id(model_id=model_id, format=format)
+        return await self._local_data_source.find_source_by_id(model_id=model_id, format=format)
 
     async def get_model_input(self, model_id: str) -> Optional[list]:
-        return self._local_data_source.find_input_by_id(model_id=model_id)
+        return await self._local_data_source.find_input_by_id(model_id=model_id)
