@@ -1,19 +1,19 @@
 version: '3.8'
 
 services:
-  app:
+  server:
     image: ksecurity/server:lastest
+    depends_on:
+      - database
     volumes:
       - .docker/data/db:/data/db
       - .docker/data/files:/data/files
     env_file: .env
+    networks:
+      - database
     ports:
       - '${PORT}:${PORT}'
     restart: unless-stopped
-    depends_on:
-      - database
-    networks:
-      - database-network
     healthcheck:
       test: wget --quiet --tries=1 --spider http://${HOST}:${PORT} || exit 1z
       interval: 30s
@@ -32,9 +32,9 @@ services:
       - DATABASE_USERNAME=${DATABASE_USERNAME}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       - DATABASE_NAME=${DATABASE_NAME}
-    restart: unless-stopped
     networks:
-      - database-network
+      - database
+    restart: unless-stopped
     healthcheck:
       test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.runCommand("ping")', '-u', '${DATABASE_USERNAME}', '-p', '${DATABASE_PASSWORD}', '--port', '${DATABASE_PORT}', '${DATABASE_NAME}']
       interval: 30s
@@ -42,5 +42,5 @@ services:
       retries: 5
 
 networks:
-  database-network:
+  database:
     driver: bridge
