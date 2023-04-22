@@ -74,6 +74,14 @@ In order to run this project you need:
   $ sudo apt install python3-venv
   ```
 
+- Install JRE
+
+  ```sh
+  $ sudo apt update
+
+  $ sudo apt install default-jre
+  ```
+
 ### 3. Install
 
 - To install, execute the following command. This command will entering the virtual environment and install dependencies.
@@ -94,76 +102,115 @@ $ sh scripts/run.sh
 
 You can deploy this project by following these steps:
 
-- Install the gunicorn Python package.
+- Install the docker package.
 
-  ```sh
-  $ pip install --no-cache-dir --upgrade gunicorn==20.1.0
-  ```
-
-- Create Systemd Service
-
-  - Create and edit systemd unit file.
+  - First, update your existing list of packages:
 
     ```sh
-    $ sudo nano /etc/systemd/system/api.k-security.service
+    $ sudo apt update
     ```
 
-  - Paste the following code and save the file.
-
-    ```
-    [Unit]
-    Description=Gunicorn Daemon for K-Security Application
-    After=network.target
-
-    [Service]
-    User={user}
-    Group=www-data
-    WorkingDirectory={directory_to_project}
-    EnvironmentFile={directory_to_project}/.env
-    ExecStart=python3 -m gunicorn src.main:app
-
-    [Install]
-    WantedBy=multi-user.target
-    ```
-
-  - Start & enable the service.
+  - Next, install a few prerequisite packages which let _`apt`_ use packages over HTTPS:
 
     ```sh
-    $ sudo systemctl start api.k-security.service
-
-    $ sudo systemctl enable api.k-security.service
+    $ sudo apt install apt-transport-https ca-certificates curl software-properties-common
     ```
 
-    To verify if everything works run the following command.
+  - Then add the GPG key for the official Docker repository to your system:
 
     ```sh
-    $ sudo systemctl status api.k-security.service
+    $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    ```
+
+  - Add the Docker repository to APT sources:
+
+    ```sh
+     $ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+    ```
+
+  - Next, update the package database with the Docker packages from the newly added repo:
+
+    ```sh
+    $ sudo apt update
+    ```
+
+    Make sure you are about to install from the Docker repo instead of the default Ubuntu repo:
+
+    ```sh
+    $ apt-cache policy docker-ce
+    ```
+
+    You’ll see output like this, although the version number for Docker may be different:
+
+    ```
+    docker-ce:
+    Installed: (none)
+    Candidate: 18.03.1~ce~3-0~ubuntu
+    Version table:
+      18.03.1~ce~3-0~ubuntu 500
+          500 https://download.docker.com/linux/ubuntu bionic/stable amd64 Packages
+    ```
+
+    Notice that docker-ce is not installed, but the candidate for installation is from the Docker repository for Ubuntu 18.04 (bionic).
+
+  - Finally, install Docker:
+
+    ```sh
+    $ sudo apt install docker-ce
+    ```
+
+    Docker should now be installed, the daemon started, and the process enabled to start on boot. Check that it’s running:
+
+    ```sh
+    $ sudo systemctl status docker
+    ```
+
+    The output should be similar to the following, showing that the service is active and running:
+
+    ```
+    Output
+    ● docker.service - Docker Application Container Engine
+      Loaded: loaded (/lib/systemd/system/docker.service; enabled; vendor preset: enabled)
+      Active: active (running) since Mon 2021-08-09 19:42:32 UTC; 33s ago
+        Docs: https://docs.docker.com
+    Main PID: 5231 (dockerd)
+        Tasks: 7
+      CGroup: /system.slice/docker.service
+              └─5231 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+    ```
+
+  Installing Docker now gives you not just the Docker service (daemon) but also the docker command line utility, or the Docker client.
+
+- Build and start the Docker container
+
+  - Build docker image
+
+    ```sh
+      $ docker build -t ksecurity/server:lastest .
+
+      $ docker compose run -d
+    ```
+
+  - Start docker container
+
+    ```sh
+      $ docker compose run -d
+
+      $ docker compose ps
     ```
 
     Expected output:
 
     ```
-    ● api.k-security.service - Gunicorn Daemon for K-Security Application
-     Loaded: loaded (/etc/systemd/system/api.k-security.service; enabled; vendor preset: enabled)
-     Active: active (running) since Sun 2023-03-25 03:53:47 UTC; 7min ago
-    Main PID: 13314 (python3)
-      Tasks: 41 (limit: 4573)
-     Memory: 251.7M
-     CGroup: /system.slice/api.k-security.service
-             ├─13314 /usr/bin/python3 -m gunicorn src.main:app
-             ├─13326 /usr/bin/python3 -m gunicorn src.main:app
-             ├─13327 /usr/bin/python3 -m gunicorn src.main:app
-             ├─13328 /usr/bin/python3 -m gunicorn src.main:app
-             ├─13329 /usr/bin/python3 -m gunicorn src.main:app
-             └─13330 /usr/bin/python3 -m gunicorn src.main:app
+    CONTAINER ID   IMAGE                  COMMAND              CREATED       STATUS                    PORTS                                   NAMES
+    1479f40b3517   kma/ksecurity-server   "gunicorn src.ma…"   11 days ago   Up 50 minutes (healthy)   0.0.0.0:8000->80/tcp, :::8000->80/tcp   ksecurity-server
 
-    Mar 25 03:53:47 k-security systemd[1]: Started Gunicorn Daemon for K-Security Application.
     ```
 
     Also, you can check the response using the following command.
 
     ```sh
-    $ curl http://0.0.0.0:8000
+    $ curl http://localhost:8000
     ```
 
 - Setup Nginx as Reverse Proxy
