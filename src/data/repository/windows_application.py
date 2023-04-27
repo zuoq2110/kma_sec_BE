@@ -6,7 +6,7 @@ from typing import Annotated, Optional
 from fastapi import Depends
 from pefile import PE
 from keras.models import load_model
-from src.data.util import extract
+from src.data.util import extract, async_generator
 from src.domain.util import InvalidArgumentException
 from .model import ModelRepository
 
@@ -35,12 +35,33 @@ class WindowsApplicationRepository:
         INPUT_SIZE = 9
 
         # Pre-processing
-        data = pe_analytic.copy()
+        model_input = [
+            'e_magic', 'e_cblp', 'e_cp', 'e_crlc', 'e_cparhdr', 'e_minalloc', 'e_maxalloc', 'e_ss', 'e_sp',
+            'e_csum', 'e_ip', 'e_cs', 'e_lfarlc', 'e_ovno', 'e_oemid', 'e_oeminfo', 'e_lfanew', 'Machine',
+            'SizeOfOptionalHeader', 'Characteristics', 'Signature', 'Magic', 'MajorLinkerVersion',
+            'MinorLinkerVersion', 'SizeOfCode', 'SizeOfInitializedData', 'SizeOfUninitializedData',
+            'AddressOfEntryPoint', 'BaseOfCode', 'BaseOfData', 'ImageBase', 'SectionAlignment',
+            'FileAlignment', 'MajorOperatingSystemVersion', 'MinorOperatingSystemVersion',
+            'MajorImageVersion', 'MinorImageVersion', 'MajorSubsystemVersion', 'MinorSubsystemVersion',
+            'Reserved1', 'SizeOfImage', 'SizeOfHeaders', 'CheckSum', 'Subsystem', 'DllCharacteristics',
+            'SizeOfStackReserve', 'SizeOfStackCommit', 'SizeOfHeapReserve', 'SizeOfHeapCommit', 'LoaderFlags',
+            'NumberOfRvaAndSizes', 'LengthOfPeSections', 'MeanEntropy', 'MinEntropy', 'MaxEntropy',
+            'MeanRawSize', 'MinRawSize', 'MaxRawSize', 'MeanVirtualSize', 'MinVirtualSize', 'MaxVirtualSize',
+            'ImportsNbDLL', 'ImportsNb', 'ImportsNbOrdinal', 'ExportNb', 'ResourcesMeanEntropy',
+            'ResourcesMinEntropy', 'ResourcesMaxEntropy', 'ResourcesMeanSize', 'ResourcesMinSize',
+            'ResourcesMaxSize', 'ResourcesNb', 'LoadConfigurationSize', 'VersionInformationSize', 'DLL',
+            'LengthOfInformation'
+        ]
+        size = len(model_input)
+        buffer = [0] * size
 
-        for key in ['MD5', 'SHA-1', 'SHA-256', 'SHA-512']:
-            data.pop(key)
+        async for i in async_generator(data=range(size)):
+            key = model_input[i]
+            try:
+                buffer[i] = pe_analytic[key]
+            except:
+                pass
 
-        buffer = [pe_analytic[key] for key in data]
         x = np.array(object=[buffer])
         x = np.nan_to_num(x=x, nan=0)
         x = x / np.max(x, axis=0)
