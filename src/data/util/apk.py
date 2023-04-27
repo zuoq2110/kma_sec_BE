@@ -14,10 +14,11 @@ from .smali import parse_smali
 
 def get_metadata(apk: APK) -> dict:
     metadata = {}
+    version_code = apk.get_androidversion_code()
 
     metadata["name"] = apk.get_app_name()
     metadata["package"] = apk.get_package()
-    metadata["version_code"] = int(apk.get_androidversion_code())
+    metadata["version_code"] = None if version_code is None else int(version_code)
     metadata["version_name"] = apk.get_androidversion_name()
     metadata["user_features"] = apk.get_features()
     metadata["permissions"] = apk.get_permissions()
