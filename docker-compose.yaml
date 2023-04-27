@@ -6,6 +6,7 @@ services:
     depends_on:
       - database
     volumes:
+      - .docker/data/cache:/data/cache
       - .docker/data/db:/data/db
       - .docker/data/files:/data/files
     env_file: .env
