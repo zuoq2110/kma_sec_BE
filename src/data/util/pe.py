@@ -13,7 +13,10 @@ def extract(pe: PE) -> dict:
     entry_import_features = extract_entry_import(pe=pe)
     resources_features = extract_resources(pe=pe)
     version_info = get_version_info(pe=pe)
-    file_dll = [entryDLL.dll.decode("utf-8") for entryDLL in pe.DIRECTORY_ENTRY_IMPORT]
+    try:
+        file_dll = [entryDLL.dll.decode("utf-8") for entryDLL in pe.DIRECTORY_ENTRY_IMPORT]
+    except:
+        file_dll = []
 
     features['MD5'] = md5(string=pe.write()).hexdigest()
     features["SHA-1"] = 1
@@ -103,11 +106,13 @@ def extract_entry_import(pe: PE) -> dict:
         imports = 0
     features = {}
 
-    features["ImportsNbDLL"] = len(pe.DIRECTORY_ENTRY_IMPORT)
+    try:
+        features["ImportsNbDLL"] = len(pe.DIRECTORY_ENTRY_IMPORT)
+    except:
+        features["ImportsNbDLL"] = 0
     features["ImportsNb"] = len(imports)
     try:
-        features["ImportsNbOrdinal"] = len(
-            len([x for x in imports if x.name is None]))
+        features["ImportsNbOrdinal"] = len(len([x for x in imports if x.name is None]))
     except:
         features["ImportsNbOrdinal"] = 0
     return features
