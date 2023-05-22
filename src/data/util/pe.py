@@ -97,7 +97,10 @@ def extract_sections(pe: PE) -> dict:
 
 
 def extract_entry_import(pe: PE) -> dict:
-    imports = sum([x.imports for x in pe.DIRECTORY_ENTRY_IMPORT], [])
+    try:
+        imports = sum([x.imports for x in pe.DIRECTORY_ENTRY_IMPORT], [])
+    except:
+        imports = 0
     features = {}
 
     features["ImportsNbDLL"] = len(pe.DIRECTORY_ENTRY_IMPORT)
