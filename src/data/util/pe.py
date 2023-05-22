@@ -103,7 +103,7 @@ def extract_entry_import(pe: PE) -> dict:
     try:
         imports = sum([x.imports for x in pe.DIRECTORY_ENTRY_IMPORT], [])
     except:
-        imports = 0
+        imports = []
     features = {}
 
     try:
