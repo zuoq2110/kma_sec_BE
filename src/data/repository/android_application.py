@@ -40,7 +40,8 @@ class AndroidApplicationRepository:
             return str(object=document["_id"])
 
         metadata = get_metadata(apk=apk)
-        apis = await disassamble(apk_bytes=apk_bytes, cache_dir=join(sep, "data", "cache"))
+        report = await disassamble(apk_bytes=apk_bytes, cache_dir=join(sep, "data", "cache"))
+        apis = list(report['apis'])
 
         if not apis:
             raise InvalidArgumentException("Invalid attachment! Can't parse APK file.")
@@ -66,7 +67,6 @@ class AndroidApplicationRepository:
         # Pre-processing
         model_input = await self._model_repository.get_model_input(model_id=model_id)
         permissions = [permission.split(".")[-1].upper() async for permission in async_generator(permissions)]
-        apis = [api["name"] async for api in async_generator(apis)]
         size = len(model_input)
         buffer = [0] * size
 
