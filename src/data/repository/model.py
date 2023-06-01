@@ -51,6 +51,7 @@ class ModelRepository:
             version=document['version'],
             type=document['type'],
             size=source_size,
+            datasets=document['datasets'],
             output=document['output'],
             accuracy=document['accuracy'],
             loss=document['loss'],
