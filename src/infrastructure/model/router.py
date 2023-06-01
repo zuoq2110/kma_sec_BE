@@ -50,8 +50,8 @@ async def get_model_history(
 @router.get(path="/{model_id}/source", status_code=200)
 async def get_model_source(
     model_id: str,
+    format: str,
     service: Annotated[ModelService, Depends()],
-    format: str = "h5"
 ) -> FileResponse:
     model_source = await service.get_model_source(model_id=model_id, format=format)
 

@@ -61,7 +61,7 @@ class AndroidApplicationRepository:
         # Load model
         model_id = models[0].id
         model_details = await self._model_repository.get_model_details(model_id=model_id)
-        model_source = await self._model_repository.get_model_source(model_id=model_id)
+        model_source = await self._model_repository.get_model_source(model_id=model_id, format='h5')
         model = load_model(filepath=model_source)
 
         # Pre-processing

@@ -37,7 +37,8 @@ class ModelRepository:
         if document == None:
             return None
 
-        source = await self.get_model_source(model_id=model_id)
+        format = 'pickle' if document['type'] == 'PICKLE' else 'h5'
+        source = await self.get_model_source(model_id=model_id, format=format)
         size = 0 if source is None else getsize(filename=source)
 
         return self._as_model_details(document=document, source_size=size)
@@ -71,7 +72,7 @@ class ModelRepository:
             val_loss=document['val_loss'],
         )
 
-    async def get_model_source(self, model_id: str, format: str = "h5") -> Optional[str]:
+    async def get_model_source(self, model_id: str, format: str) -> Optional[str]:
         return await self._local_data_source.find_source_by_id(model_id=model_id, format=format)
 
     async def get_model_input(self, model_id: str) -> Optional[list]:

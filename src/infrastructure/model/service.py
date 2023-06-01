@@ -33,7 +33,7 @@ class ModelService():
 
         return model_history
 
-    async def get_model_source(self, model_id: str, format: str = "h5"):
+    async def get_model_source(self, model_id: str, format: str):
         model_source = await self._model_repository.get_model_source(model_id=model_id, format=format)
 
         if model_source == None:
