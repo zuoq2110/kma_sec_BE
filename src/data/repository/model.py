@@ -1,6 +1,5 @@
 from typing import Annotated, Optional
 from os.path import getsize
-from datetime import timezone
 from fastapi import Depends
 from src.data.local import ModelLocalDataSource
 from src.domain.data.model import Model, ModelDetails, ModelHistory
@@ -29,9 +28,7 @@ class ModelRepository:
             id=str(object=document['_id']),
             version=document['version'],
             type=document['type'],
-            created_at=document['created_at']
-                .replace(tzinfo=timezone.utc)
-                .isoformat()
+            created_at=document['created_at'].isoformat()
         )
 
     async def get_model_details(self, model_id: str) -> Optional[ModelDetails]:
@@ -58,9 +55,7 @@ class ModelRepository:
             precision=document['precision'],
             recall=document['recall'],
             f1=document['f1'],
-            created_at=document['created_at']
-                .replace(tzinfo=timezone.utc)
-                .isoformat()
+            created_at=document['created_at'].isoformat()
         )
 
     async def get_model_history(self, model_id: str) -> Optional[ModelHistory]:
