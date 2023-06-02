@@ -1,6 +1,14 @@
 from dataclasses import dataclass
 
 
+MODEL_TYPE_HDF5 = 'HDF5/H5'
+MODEL_TYPE_PICKLE = 'PICKLE'
+
+MODEL_SOURCE_TYPE_HDF5 = "h5"
+MODEL_SOURCE_TYPE_TFLITE = "tflite"
+MODEL_SOURCE_TYPE_PICKLE = "pickle"
+
+
 @dataclass
 class Model:
     id: str

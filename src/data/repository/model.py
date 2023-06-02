@@ -10,11 +10,11 @@ class ModelRepository:
     def __init__(self, local_data_source: Annotated[ModelLocalDataSource, Depends()]) -> None:
         self._local_data_source = local_data_source
 
-    async def create_model(self, model: bytes, metadata: dict) -> str:
-        return await self._local_data_source.insert(model=model, metadata=metadata)
+    async def create_model(self, model: bytes, metadata: dict, format: str) -> str:
+        return await self._local_data_source.insert(model=model, metadata=metadata, format=format)
 
-    async def get_models(self, page: int, limit: int) -> list[Model]:
-        cursor = await self._local_data_source.find_all(page=page, limit=limit)
+    async def get_models(self, type: str = None, page: int = 1, limit: int = 20) -> list[Model]:
+        cursor = await self._local_data_source.find_all(type=type, page=page, limit=limit)
         models = []
 
         for document in cursor:

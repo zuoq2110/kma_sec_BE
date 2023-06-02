@@ -10,10 +10,11 @@ router = APIRouter(prefix="/models", tags=["models"])
 @router.get(path="", status_code=status.HTTP_200_OK)
 async def get_models(
     service: Annotated[ModelService, Depends()],
+    type: str = None,
+    page: int = 1,
     limit: int = 20,
-    page: int = 0
 ):
-    models = await service.get_models(limit=limit, page=page)
+    models = await service.get_models(type=type, page=page, limit=limit)
 
     return {
         "message": "Get models successfully.",
