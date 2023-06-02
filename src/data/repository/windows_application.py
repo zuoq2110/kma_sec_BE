@@ -1,15 +1,19 @@
 import numpy as np
 
-from os import sep
-from os.path import join
-from typing import Optional
+from typing import Annotated, Optional
+from fastapi import Depends
 from pefile import PE
 from pickle import load
 from src.data.util import extract, async_generator
+from src.domain.data.model.model import MODEL_TYPE_PICKLE, MODEL_SOURCE_TYPE_PICKLE
 from src.domain.util import InvalidArgumentException
+from .model import ModelRepository
 
 
 class WindowsApplicationRepository:
+
+    def __init__(self, model_repository: Annotated[ModelRepository, Depends()]):
+        self._model_repository = model_repository
 
     async def create_application_analysis(self, pe_bytes: bytes) -> dict:
         try:
@@ -22,25 +26,20 @@ class WindowsApplicationRepository:
         return analytic
 
     async def _get_application_malware_type(self, pe_analytic: dict) -> Optional[str]:
+        models = await self._model_repository.get_models(type=MODEL_TYPE_PICKLE, limit=1)
+
+        if not models:
+            return None
+
         # Load model
-        model_id = "644a35532a59a202605f6038"
-        model = self._get_model(model_id=model_id)
+        model_id = models[0].id
+        model_source = await self._model_repository.get_model_source(model_id=model_id, format=MODEL_SOURCE_TYPE_PICKLE)
+
+        with open(file=model_source, mode='rb') as file:
+            model = load(file=file)
 
         # Pre-processing
-        model_input = [
-            'e_magic', 'e_cblp', 'e_cp', 'e_crlc', 'e_cparhdr', 'e_minalloc', 'e_maxalloc', 'e_ss', 
-            'e_sp', 'e_csum', 'e_ip', 'e_cs', 'e_lfarlc', 'e_ovno', 'e_oemid', 'e_oeminfo', 
-            'e_lfanew', 'Machine', 'SizeOfOptionalHeader', 'Characteristics', 'Signature', 
-            'Magic', 'MajorLinkerVersion', 'MinorLinkerVersion', 'SizeOfCode', 
-            'SizeOfInitializedData', 'SizeOfUninitializedData', 'AddressOfEntryPoint', 'BaseOfCode', 
-            'BaseOfData', 'ImageBase', 'SectionAlignment', 'FileAlignment', 
-            'MajorOperatingSystemVersion', 'MinorOperatingSystemVersion', 'MajorImageVersion', 
-            'MinorImageVersion', 'MajorSubsystemVersion', 'MinorSubsystemVersion', 'Reserved1', 
-            'SizeOfImage', 'SizeOfHeaders', 'CheckSum', 'Subsystem', 'DllCharacteristics', 
-            'SizeOfStackReserve', 'SizeOfStackCommit', 'SizeOfHeapReserve', 'SizeOfHeapCommit', 
-            'LoaderFlags', 'NumberOfRvaAndSizes', 'LengthOfPeSections', 'MeanRawSize', 
-            'MeanVirtualSize', 'ImportsNbDLL', 'ImportsNbOrdinal'
-        ]
+        model_input = await self._model_repository.get_model_input(model_id=model_id)
         size = len(model_input)
         buffer = [0] * size
 
@@ -57,19 +56,10 @@ class WindowsApplicationRepository:
         y = model.predict(x)[0]
 
         # Post-processing:
-        model_output = [
-            "Benign", "Virus", "Trojan", "Adware", "Worm", "Pua", "Downloader", "Ransomware", 
-            "Hacktool", "Miner", "Banker", "No Label", "Dropper", "Fakeav", "Suspack", "Damaged"
-        ]
+        model_details = await self._model_repository.get_model_details(model_id=model_id)
+        model_output = model_details.output
         result = model_output[y]
         return result
-
-    def _get_model(self, model_id: str):
-        model_source = join(sep, "data", "files", model_id, "model.pickle")
-
-        with open(file=model_source, mode='rb') as file:
-            model = load(file=file)
-        return model
 
     async def get_application_analysis(self, analysis_id: str) -> Optional[dict]:
         return None

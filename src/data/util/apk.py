@@ -2,7 +2,6 @@ from os import walk
 from os.path import exists, join
 from uuid import uuid4
 from fnmatch import filter
-from collections import Counter
 from aiofiles.os import makedirs
 from asyncio import create_subprocess_shell
 from asyncio.subprocess import PIPE
@@ -28,7 +27,7 @@ def get_metadata(apk: APK) -> dict:
     return metadata
 
 
-async def disassamble(apk_bytes: bytes, cache_dir: str) -> list:
+async def disassamble(apk_bytes: bytes, cache_dir: str) -> dict:
     uuid = uuid4().hex
     dir = join(cache_dir, f"{uuid}")
     path = join(dir, f"{uuid}.apk")
@@ -36,21 +35,12 @@ async def disassamble(apk_bytes: bytes, cache_dir: str) -> list:
 
     await makedirs(name=dir, exist_ok=True)
     await save(data=apk_bytes, path=path)
-
-    packages = await get_content(path=join('libs', 'androPyTool', 'packages.txt'))
-    classes = await get_content(path=join('libs', 'androPyTool', 'classes.txt'))
-    apis = []
-
     await decode(apk_path=path, out_dir=out_dir)
-    async for smali in get_smali_files(source_dir=out_dir):
-        async for package_name, class_name, method_name in parse_smali(smali_path=smali):
-            if package_name in packages and class_name in classes and method_name != "<init>":
-                api = f"{package_name}.{class_name}.{method_name}"
-                apis.append(api)
-    apis = [api async for api in each_count(apis=apis)]
+
+    apis = await get_apis(source_dir=out_dir)
 
     await rmtree(dir)
-    return apis
+    return {"apis": apis}
 
 
 async def decode(apk_path: str, out_dir: str):
@@ -62,12 +52,19 @@ async def decode(apk_path: str, out_dir: str):
         await proc.communicate()
 
 
+async def get_apis(source_dir: str) -> set[str]:
+    apis = set()
+    packages = await get_content(path=join('libs', 'androPyTool', 'packages.txt'))
+    classes = await get_content(path=join('libs', 'androPyTool', 'classes.txt'))
+
+    async for smali in get_smali_files(source_dir=source_dir):
+        async for package_name, class_name, method_name in parse_smali(smali_path=smali):
+            if package_name in packages and class_name in classes and method_name != "<init>":
+                apis.add(f"{package_name}.{class_name}.{method_name}")
+    return apis
+
+
 async def get_smali_files(source_dir: str):
     for root, _, files, in walk(source_dir):
         for file in filter(files, "*.smali"):
             yield join(root, file)
-
-
-async def each_count(apis: list):
-    for key, value in Counter(apis).items():
-        yield {"name": key, "frequency": value}

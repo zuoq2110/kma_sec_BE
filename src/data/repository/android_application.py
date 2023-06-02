@@ -8,6 +8,7 @@ from fastapi import Depends
 from androguard.core.bytecodes.apk import APK
 from keras.models import load_model
 from src.domain.data.model import AndroidApplicationDetails
+from src.domain.data.model.model import MODEL_TYPE_HDF5, MODEL_SOURCE_TYPE_HDF5
 from src.domain.util import InvalidArgumentException
 from src.data.local import AndroidApplicationLocalDataSource
 from src.data.util import get_metadata, disassamble, async_generator
@@ -40,7 +41,8 @@ class AndroidApplicationRepository:
             return str(object=document["_id"])
 
         metadata = get_metadata(apk=apk)
-        apis = await disassamble(apk_bytes=apk_bytes, cache_dir=join(sep, "data", "cache"))
+        report = await disassamble(apk_bytes=apk_bytes, cache_dir=join(sep, "data", "cache"))
+        apis = list(report['apis'])
 
         if not apis:
             raise InvalidArgumentException("Invalid attachment! Can't parse APK file.")
@@ -52,7 +54,7 @@ class AndroidApplicationRepository:
         return str(object=document_id)
 
     async def _get_application_malware_type(self, permissions: list, apis: list) -> Optional[str]:
-        models = await self._model_repository.get_models(page=1, limit=1)
+        models = await self._model_repository.get_models(type=MODEL_TYPE_HDF5, limit=1)
 
         if not models:
             return None
@@ -60,13 +62,12 @@ class AndroidApplicationRepository:
         # Load model
         model_id = models[0].id
         model_details = await self._model_repository.get_model_details(model_id=model_id)
-        model_source = await self._model_repository.get_model_source(model_id=model_id)
+        model_source = await self._model_repository.get_model_source(model_id=model_id, format=MODEL_SOURCE_TYPE_HDF5)
         model = load_model(filepath=model_source)
 
         # Pre-processing
         model_input = await self._model_repository.get_model_input(model_id=model_id)
         permissions = [permission.split(".")[-1].upper() async for permission in async_generator(permissions)]
-        apis = [api["name"] async for api in async_generator(apis)]
         size = len(model_input)
         buffer = [0] * size
 
