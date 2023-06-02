@@ -46,7 +46,7 @@ async def disassamble(apk_bytes: bytes, cache_dir: str) -> dict:
 async def decode(apk_path: str, out_dir: str):
     if not exists(out_dir):
         lib_path = join('libs', 'apktool.jar')
-        cmd = ['java', '-jar', lib_path, 'd', apk_path, '-f', '--force-manifest', '--no-assets', '-o', out_dir, '-r']
+        cmd = f"java -jar {lib_path} d {apk_path} -f --force-manifest --no-assets -o {out_dir} -r"
         proc = await create_subprocess_shell(cmd, stdout=PIPE, stderr=PIPE)
 
         await proc.communicate()
