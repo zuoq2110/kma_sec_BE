@@ -38,7 +38,7 @@ class ModelLocalDataSource:
             query['type'] = type
 
         return self._collection \
-            .find(query, {"_id": 1, "version": 1, "type": 1, "created_at": 1}) \
+            .find(query, {"_id": 1, "version": 1, "type": 1, "input_format": 1, "created_at": 1}) \
             .sort([('date', DESCENDING)]) \
             .skip(skip=skip) \
             .limit(limit=limit)

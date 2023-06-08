@@ -28,6 +28,7 @@ class ModelRepository:
             id=str(object=document['_id']),
             version=document['version'],
             type=document['type'],
+            input_format=document['input_format'],
             created_at=document['created_at'].isoformat()
         )
 
@@ -49,6 +50,7 @@ class ModelRepository:
             version=document['version'],
             type=document['type'],
             size=source_size,
+            input_format=document['input_format'],
             datasets=document['datasets'],
             output=document['output'],
             accuracy=document['accuracy'],

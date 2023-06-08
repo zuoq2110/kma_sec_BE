@@ -14,6 +14,7 @@ class Model:
     id: str
     version: str
     type: str
+    input_format: str
     created_at: str
 
 
@@ -23,6 +24,7 @@ class ModelDetails:
     version: str
     type: str
     size: int
+    input_format: str
     datasets: list
     output: list[str]
     accuracy: float
