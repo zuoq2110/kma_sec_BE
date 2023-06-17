@@ -1,0 +1,64 @@
+def COMMIT_SHA
+
+pipeline {
+    agent any
+
+    environment {
+        def REGISTRY = 'registry.gitlab.com/k-security/server'
+        def REGISTRY_IMAGE = 'registry.gitlab.com/k-security/server'
+    }
+
+    stages {
+        stage('Clone') {
+            steps {
+                git branch: 'master', url: 'https://gitlab.com/k-security/server'
+                script {
+                    COMMIT_SHA = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                withDockerRegistry(credentialsId: 'registry-creds', url: 'https://registry.gitlab.com/k-security/server') {
+                    sh "docker pull $REGISTRY_IMAGE:latest || true"
+                }
+                sh "docker build --cache-from $REGISTRY_IMAGE:latest --tag $REGISTRY_IMAGE:$COMMIT_SHA ."
+            }
+        }
+
+        stage('Release') {
+            steps {
+                sh "docker tag $REGISTRY_IMAGE:$COMMIT_SHA $REGISTRY_IMAGE:latest"
+                withDockerRegistry(credentialsId: 'registry-creds', url: 'https://registry.gitlab.com/k-security/server') {
+                    sh "docker push $REGISTRY_IMAGE:$COMMIT_SHA"
+                    sh "docker push $REGISTRY_IMAGE:latest"
+                }
+                sh 'docker system prune -f -a'
+            }
+        }
+
+        stage('Deploy') {
+            environment {
+                SSH_USER = credentials('server-ssh-user')
+                SSH_SERVER_IP = credentials('server-ssh-server-ip')
+                REGISTRY_CREDS = credentials('registry-creds')
+            }
+
+            steps {
+                sshagent(credentials: ['server-ssh-creds']) {
+                   sh '''
+                    ssh -o StrictHostKeyChecking=no -l $SSH_USER $SSH_SERVER_IP "
+                        docker login -u $REGISTRY_CREDS_USR -p $REGISTRY_CREDS_PSW $REGISTRY &&
+                        cd ~/Apps/k-security/server &&
+                        docker compose down &&
+                        docker pull $REGISTRY_IMAGE:latest &&
+                        docker compose up -d &&
+                        docker system prune -f -a
+                    "
+                   '''
+                }
+            }
+        }
+    }
+}
