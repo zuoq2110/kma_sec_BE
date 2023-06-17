@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   server:
-    image: ksecurity/server:latest
+    image: registry.gitlab.com/k-security/server:latest
     depends_on:
       - database
     volumes:
