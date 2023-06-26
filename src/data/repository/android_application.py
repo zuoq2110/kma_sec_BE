@@ -75,9 +75,11 @@ class AndroidApplicationRepository:
             label = model_input[i]
             buffer[i] = 1 if label in permissions or label in apis else 0
 
+        matrix_size = 44
+        padding_size = matrix_size * matrix_size - size
         x = np.array(object=[buffer])
-        x = np.concatenate((x, np.zeros((x.shape[0], 15))), 1)
-        x = x.reshape(x.shape[0], 44, 44, 1)
+        x = np.concatenate((x, np.zeros((x.shape[0], padding_size))), 1)
+        x = x.reshape(x.shape[0], matrix_size, matrix_size, 1)
 
         # Run model prediction with the input data.
         y = model(x)[0]
