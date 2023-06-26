@@ -8,9 +8,10 @@ from fastapi import Depends
 from androguard.core.bytecodes.apk import APK
 from keras.models import load_model
 from src.domain.data.model import AndroidApplicationDetails
-from src.domain.data.model.model import MODEL_TYPE_HDF5, MODEL_SOURCE_TYPE_HDF5
+from src.domain.data.model.model import MODEL_INPUT_FORMAT_APK, MODEL_SOURCE_TYPE_HDF5
 from src.domain.util import InvalidArgumentException
 from src.data.local import AndroidApplicationLocalDataSource
+from src.data.local.document import as_android_application, as_android_application_details
 from src.data.util import get_metadata, disassamble, async_generator
 from .model import ModelRepository
 from .android_application_api import AndroidApplicationApiRepository
@@ -28,17 +29,17 @@ class AndroidApplicationRepository:
         self._model_repository = model_repository
         self._android_application_api_repository = android_application_api_repository
 
+    async def get_application_analysis(self, page: int = 1, limit: int = 20) -> list:
+        cursor = await self._local_data_source.find_all(page=page, limit=limit)
+        application_analysis = [as_android_application(document=document) for document in cursor]
+
+        return application_analysis
+
     async def create_application_analysis(self, apk_bytes: bytes) -> str:
         try:
             apk = APK(apk_bytes, raw=True)
         except:
             raise InvalidArgumentException("Invalid attachment! Only APK format is supported.")
-
-        package = apk.get_package()
-        document = await self._local_data_source.find_by_package(package=package)
-
-        if document != None:
-            return str(object=document["_id"])
 
         metadata = get_metadata(apk=apk)
         report = await disassamble(apk_bytes=apk_bytes, cache_dir=join(sep, "data", "cache"))
@@ -54,7 +55,7 @@ class AndroidApplicationRepository:
         return str(object=document_id)
 
     async def _get_application_malware_type(self, permissions: list, apis: list) -> Optional[str]:
-        models = await self._model_repository.get_models(type=MODEL_TYPE_HDF5, limit=1)
+        models = await self._model_repository.get_models(input_format=MODEL_INPUT_FORMAT_APK, limit=1)
 
         if not models:
             return None
@@ -75,9 +76,11 @@ class AndroidApplicationRepository:
             label = model_input[i]
             buffer[i] = 1 if label in permissions or label in apis else 0
 
+        matrix_size = 44
+        padding_size = matrix_size * matrix_size - size
         x = np.array(object=[buffer])
-        x = np.concatenate((x, np.zeros((x.shape[0], 15))), 1)
-        x = x.reshape(x.shape[0], 44, 44, 1)
+        x = np.concatenate((x, np.zeros((x.shape[0], padding_size))), 1)
+        x = x.reshape(x.shape[0], matrix_size, matrix_size, 1)
 
         # Run model prediction with the input data.
         y = model(x)[0]
@@ -90,26 +93,8 @@ class AndroidApplicationRepository:
 
         return model_output[index]
 
-    async def get_application_analysis(self, analysis_id: str) -> Optional[AndroidApplicationDetails]:
+    async def get_application_analysis_details(self, analysis_id: str) -> Optional[AndroidApplicationDetails]:
         id = ObjectId(oid=analysis_id)
         document = await self._local_data_source.find_by_id(document_id=id)
 
-        if document == None:
-            return None
-
-        return self._as_android_application_details(document=document)
-
-    def _as_android_application_details(self, document) -> AndroidApplicationDetails:
-        return AndroidApplicationDetails(
-            id=str(object=document['_id']),
-            name=document['name'],
-            package=document['package'],
-            version_code=document['version_code'],
-            version_name=document['version_name'],
-            user_features=document['user_features'],
-            permissions=document['permissions'],
-            activities=document['activities'],
-            services=document['services'],
-            receivers=document['receivers'],
-            malware_type=document['malware_type']
-        )
+        return None if document is None else as_android_application_details(document=document)

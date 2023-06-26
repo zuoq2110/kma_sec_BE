@@ -4,6 +4,9 @@ from dataclasses import dataclass
 MODEL_TYPE_HDF5 = 'HDF5/H5'
 MODEL_TYPE_PICKLE = 'PICKLE'
 
+MODEL_INPUT_FORMAT_APK = "APK"
+MODEL_INPUT_FORMAT_PE = "PE"
+
 MODEL_SOURCE_TYPE_HDF5 = "h5"
 MODEL_SOURCE_TYPE_TFLITE = "tflite"
 MODEL_SOURCE_TYPE_PICKLE = "pickle"
@@ -25,14 +28,18 @@ class ModelDetails:
     type: str
     size: int
     input_format: str
-    datasets: list
     output: list[str]
     accuracy: float
-    loss: float
     precision: float
     recall: float
     f1: float
     created_at: str
+
+
+@dataclass
+class ModelDataset:
+    label: str
+    quantity: int
 
 
 @dataclass
