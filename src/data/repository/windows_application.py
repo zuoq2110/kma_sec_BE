@@ -5,7 +5,7 @@ from fastapi import Depends
 from pefile import PE
 from pickle import load
 from src.data.util import extract, async_generator
-from src.domain.data.model.model import MODEL_TYPE_PICKLE, MODEL_SOURCE_TYPE_PICKLE
+from src.domain.data.model.model import MODEL_INPUT_FORMAT_PE, MODEL_SOURCE_TYPE_PICKLE
 from src.domain.util import InvalidArgumentException
 from .model import ModelRepository
 
@@ -26,7 +26,7 @@ class WindowsApplicationRepository:
         return analytic
 
     async def _get_application_malware_type(self, pe_analytic: dict) -> Optional[str]:
-        models = await self._model_repository.get_models(type=MODEL_TYPE_PICKLE, limit=1)
+        models = await self._model_repository.get_models(input_format=MODEL_INPUT_FORMAT_PE, limit=1)
 
         if not models:
             return None

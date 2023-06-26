@@ -8,8 +8,8 @@ class ModelService:
     def __init__(self, model_repository: Annotated[ModelRepository, Depends()]) -> None:
         self._model_repository = model_repository
 
-    async def get_models(self, type: str = None, page: int = 1, limit: int = 20):
-        return await self._model_repository.get_models(type=type, page=page, limit=limit)
+    async def get_models(self, input_format: str = None, page: int = 1, limit: int = 20):
+        return await self._model_repository.get_models(input_format=input_format, page=page, limit=limit)
 
     async def get_model_details(self, model_id: str):
         return await self._model_repository.get_model_details(model_id=model_id)

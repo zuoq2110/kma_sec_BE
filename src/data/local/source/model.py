@@ -30,12 +30,12 @@ class ModelLocalDataSource:
 
         save(data=model, path=join(dir, f"model.{format}"))
 
-    async def find_all(self, type: str = None, page: int = 1, limit: int = 20) -> Cursor:
+    async def find_all(self, input_format: str = None, page: int = 1, limit: int = 20) -> Cursor:
         query = {}
         skip = max(0, (page - 1) * limit)
 
-        if type != None:
-            query['type'] = type
+        if input_format != None:
+            query['input_format'] = input_format
 
         return self._collection \
             .find(query, {"_id": 1, "version": 1, "type": 1, "input_format": 1, "created_at": 1}) \

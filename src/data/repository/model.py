@@ -15,8 +15,8 @@ class ModelRepository:
     async def create_model(self, model: bytes, metadata: dict, format: str) -> str:
         return await self._local_data_source.insert(model=model, metadata=metadata, format=format)
 
-    async def get_models(self, type: str = None, page: int = 1, limit: int = 20) -> list[Model]:
-        cursor = await self._local_data_source.find_all(type=type, page=page, limit=limit)
+    async def get_models(self, input_format: str = None, page: int = 1, limit: int = 20) -> list[Model]:
+        cursor = await self._local_data_source.find_all(input_format=input_format, page=page, limit=limit)
         models = [as_model(document=document) for document in cursor]
 
         return models
