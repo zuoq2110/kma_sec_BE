@@ -41,12 +41,6 @@ class AndroidApplicationRepository:
         except:
             raise InvalidArgumentException("Invalid attachment! Only APK format is supported.")
 
-        package = apk.get_package()
-        document = await self._local_data_source.find_by_package(package=package)
-
-        if document != None:
-            return str(object=document["_id"])
-
         metadata = get_metadata(apk=apk)
         report = await disassamble(apk_bytes=apk_bytes, cache_dir=join(sep, "data", "cache"))
         apis = list(report['apis'])

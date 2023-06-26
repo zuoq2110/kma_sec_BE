@@ -35,8 +35,3 @@ class AndroidApplicationLocalDataSource:
         filter = {"_id": document_id}
 
         return self._collection.find_one(filter)
-
-    async def find_by_package(self, package: str) -> Optional[Any]:
-        filter = {"package": package}
-
-        return self._collection.find_one(filter, {"_id": 1})
