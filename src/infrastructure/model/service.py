@@ -14,11 +14,14 @@ class ModelService:
     async def get_model_details(self, model_id: str):
         return await self._model_repository.get_model_details(model_id=model_id)
 
+    async def get_model_datasets(self, model_id: str):
+        return await self._model_repository.get_model_datasets(model_id=model_id)
+
+    async def get_model_input(self, model_id: str):
+        return await self._model_repository.get_model_input(model_id=model_id)
+
     async def get_model_history(self, model_id: str):
         return await self._model_repository.get_model_history(model_id=model_id)
 
     async def get_model_source(self, model_id: str, format: str):
         return await self._model_repository.get_model_source(model_id=model_id, format=format)
-
-    async def get_model_input(self, model_id: str):
-        return await self._model_repository.get_model_input(model_id=model_id)

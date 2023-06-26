@@ -37,6 +37,12 @@ class ModelDetails:
 
 
 @dataclass
+class ModelDataset:
+    label: str
+    quantity: int
+
+
+@dataclass
 class ModelHistory:
     accuracy: list[float]
     val_accuracy: list[float]

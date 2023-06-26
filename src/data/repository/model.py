@@ -1,10 +1,10 @@
 from typing import Annotated, Optional
 from os.path import getsize
 from fastapi import Depends
-from src.domain.data.model import Model, ModelDetails, ModelHistory
+from src.domain.data.model import Model, ModelDetails, ModelDataset, ModelHistory
 from src.domain.data.model.model import MODEL_TYPE_PICKLE, MODEL_SOURCE_TYPE_HDF5, MODEL_SOURCE_TYPE_PICKLE
 from src.data.local import ModelLocalDataSource
-from src.data.local.document import as_model, as_model_details, as_model_history
+from src.data.local.document import as_model, as_model_details, as_model_dataset, as_model_history
 
 
 class ModelRepository:
@@ -32,6 +32,11 @@ class ModelRepository:
         size = 0 if source is None else getsize(filename=source)
 
         return as_model_details(document=document, source_size=size)
+
+    async def get_model_datasets(self, model_id: str) -> Optional[list]:
+        documents = await self._local_data_source.find_datasets_by_id(model_id=model_id)
+
+        return None if documents is None else [as_model_dataset(document=document) for document in documents]
 
     async def get_model_history(self, model_id: str) -> Optional[ModelHistory]:
         document = await self._local_data_source.find_history_by_id(model_id=model_id)

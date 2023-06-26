@@ -1,4 +1,4 @@
-from src.domain.data.model import Model, ModelDetails, ModelHistory
+from src.domain.data.model import Model, ModelDetails, ModelDataset, ModelHistory
 
 
 def as_model(document) -> Model:
@@ -24,6 +24,13 @@ def as_model_details(document, source_size: int) -> ModelDetails:
         recall=document['recall'],
         f1=document['f1'],
         created_at=document['created_at'].isoformat()
+    )
+
+
+def as_model_dataset(document) -> ModelDataset:
+    return ModelDataset(
+        label=document['label'],
+        quantity=document['quantity']
     )
 
 

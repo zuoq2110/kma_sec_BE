@@ -41,6 +41,25 @@ async def get_model_details(
     }
 
 
+@router.get(path="/{model_id}/datasets", status_code=status.HTTP_200_OK)
+async def get_model_datasets(
+    model_id: str,
+    service: Annotated[ModelService, Depends()]
+):
+    model_datasets = await service.get_model_datasets(model_id=model_id)
+
+    if model_datasets == None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Model datasets could not be found!"
+        )
+
+    return {
+        "message": "Get model datasets successfully.",
+        "data": model_datasets
+    }
+
+
 @router.get(path="/{model_id}/input", status_code=status.HTTP_200_OK)
 async def get_model_input(
     model_id: str,

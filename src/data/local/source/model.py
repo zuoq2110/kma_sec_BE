@@ -49,7 +49,17 @@ class ModelLocalDataSource:
         except:
             return None
 
-        return self._collection.find_one({"_id": id}, {"input": 0, "history": 0})
+        return self._collection.find_one({"_id": id}, {"datasets": 0, "input": 0, "history": 0})
+
+    async def find_datasets_by_id(self, model_id: str) -> Optional[list]:
+        try:
+            id = ObjectId(oid=model_id)
+        except:
+            return None
+
+        document = self._collection.find_one({"_id": id}, {"datasets": 1})
+
+        return None if document is None else document["datasets"]
 
     async def find_input_by_id(self, model_id: str) -> Optional[list]:
         try:
