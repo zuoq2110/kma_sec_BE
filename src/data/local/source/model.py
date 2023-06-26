@@ -44,18 +44,39 @@ class ModelLocalDataSource:
             .limit(limit=limit)
 
     async def find_by_id(self, model_id: str) -> Optional[Any]:
-        id = ObjectId(oid=model_id)
+        try:
+            id = ObjectId(oid=model_id)
+        except:
+            return None
 
         return self._collection.find_one({"_id": id}, {"input": 0, "history": 0})
 
+    async def find_input_by_id(self, model_id: str) -> Optional[list]:
+        try:
+            id = ObjectId(oid=model_id)
+        except:
+            return None
+
+        document = self._collection.find_one({"_id": id}, {"input": 1})
+
+        return None if document is None else document["input"]
+
     async def find_history_by_id(self, model_id: str) -> Optional[Any]:
-        id = ObjectId(oid=model_id)
+        try:
+            id = ObjectId(oid=model_id)
+        except:
+            return None
+
         document = self._collection.find_one({"_id": id}, {"history": 1})
 
         return None if document is None else document["history"]
 
     async def find_source_by_id(self, model_id: str, format: str) -> Optional[str]:
-        id = ObjectId(oid=model_id)
+        try:
+            id = ObjectId(oid=model_id)
+        except:
+            return None
+
         count = self._collection.count_documents({"_id": id}, None, None, limit=1)
 
         if count != 1:
@@ -64,9 +85,3 @@ class ModelLocalDataSource:
         path = join(sep, "data", "files", model_id, f"model.{format}")
 
         return path if isfile(path) else None
-
-    async def find_input_by_id(self, model_id: str) -> Optional[list]:
-        id = ObjectId(oid=model_id)
-        document = self._collection.find_one({"_id": id}, {"input": 1})
-
-        return None if document is None else document["input"]
