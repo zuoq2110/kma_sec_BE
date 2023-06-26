@@ -18,7 +18,6 @@ def as_model_details(document, source_size: int) -> ModelDetails:
         type=document['type'],
         size=source_size,
         input_format=document['input_format'],
-        datasets=document['datasets'],
         output=document['output'],
         accuracy=document['accuracy'],
         precision=document['precision'],

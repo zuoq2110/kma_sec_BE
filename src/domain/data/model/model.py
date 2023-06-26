@@ -28,7 +28,6 @@ class ModelDetails:
     type: str
     size: int
     input_format: str
-    datasets: list
     output: list[str]
     accuracy: float
     precision: float
