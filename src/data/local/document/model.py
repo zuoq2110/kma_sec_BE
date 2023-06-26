@@ -21,7 +21,6 @@ def as_model_details(document, source_size: int) -> ModelDetails:
         datasets=document['datasets'],
         output=document['output'],
         accuracy=document['accuracy'],
-        loss=document['loss'],
         precision=document['precision'],
         recall=document['recall'],
         f1=document['f1'],

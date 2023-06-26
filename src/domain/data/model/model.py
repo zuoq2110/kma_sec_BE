@@ -31,7 +31,6 @@ class ModelDetails:
     datasets: list
     output: list[str]
     accuracy: float
-    loss: float
     precision: float
     recall: float
     f1: float
