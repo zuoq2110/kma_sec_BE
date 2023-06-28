@@ -2,7 +2,6 @@ fastapi==0.95.0
 uvicorn==0.21.1
 python-multipart==0.0.6
 aiofiles==23.1.0
-aioshutil==1.3
 androguard==3.3.5
 pefile==2023.2.7
 tensorflow==2.11.0
