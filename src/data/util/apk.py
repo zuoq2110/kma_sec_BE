@@ -1,70 +1,41 @@
-from os import walk
-from os.path import exists, join
-from uuid import uuid4
-from fnmatch import filter
-from aiofiles.os import makedirs
-from asyncio import create_subprocess_shell
-from asyncio.subprocess import PIPE
-from aioshutil import rmtree
+from os.path import join
 from androguard.core.bytecodes.apk import APK
-from .file import save, get_content
-from .smali import parse_smali
+from androguard.core.analysis.analysis import Analysis
+from .file import get_content
+from .iterable import async_generator
 
 
-def get_metadata(apk: APK) -> dict:
+def get_metadata(a: APK) -> dict:
     metadata = {}
-    version_code = apk.get_androidversion_code()
+    version_code = a.get_androidversion_code()
 
-    metadata["name"] = apk.get_app_name()
-    metadata["package"] = apk.get_package()
+    metadata["name"] = a.get_app_name()
+    metadata["package"] = a.get_package()
     metadata["version_code"] = None if version_code is None else int(version_code)
-    metadata["version_name"] = apk.get_androidversion_name()
-    metadata["user_features"] = apk.get_features()
-    metadata["permissions"] = apk.get_permissions()
-    metadata["activities"] = apk.get_activities()
-    metadata["services"] = apk.get_services()
-    metadata["receivers"] = apk.get_receivers()
+    metadata["version_name"] = a.get_androidversion_name()
+    metadata["user_features"] = a.get_features()
+    metadata["permissions"] = a.get_permissions()
+    metadata["activities"] = a.get_activities()
+    metadata["services"] = a.get_services()
+    metadata["receivers"] = a.get_receivers()
     return metadata
 
 
-async def disassamble(apk_bytes: bytes, cache_dir: str) -> dict:
-    uuid = uuid4().hex
-    dir = join(cache_dir, f"{uuid}")
-    path = join(dir, f"{uuid}.apk")
-    out_dir = join(dir, "out")
-
-    await makedirs(name=dir, exist_ok=True)
-    await save(data=apk_bytes, path=path)
-    await decode(apk_path=path, out_dir=out_dir)
-
-    apis = await get_apis(source_dir=out_dir)
-
-    await rmtree(dir)
-    return {"apis": apis}
-
-
-async def decode(apk_path: str, out_dir: str):
-    if not exists(out_dir):
-        lib_path = join('libs', 'apktool.jar')
-        cmd = f"java -jar {lib_path} d {apk_path} -f --force-manifest --no-assets -o {out_dir} -r"
-        proc = await create_subprocess_shell(cmd, stdout=PIPE, stderr=PIPE)
-
-        await proc.communicate()
-
-
-async def get_apis(source_dir: str) -> set[str]:
-    apis = set()
+async def get_apis(dx: Analysis) -> list:
     packages = await get_content(path=join('libs', 'androPyTool', 'packages.txt'))
     classes = await get_content(path=join('libs', 'androPyTool', 'classes.txt'))
+    ignore_methods = ["<init>", "<clinit>"]
+    apis = set()
 
-    async for smali in get_smali_files(source_dir=source_dir):
-        async for package_name, class_name, method_name in parse_smali(smali_path=smali):
-            if package_name in packages and class_name in classes and method_name != "<init>":
-                apis.add(f"{package_name}.{class_name}.{method_name}")
-    return apis
+    async for class_name, class_analysis in async_generator(data=dx.classes.items()):
+        names = class_name[1: -1].split("/")
+        package_name = ".".join(names[: -1])
 
+        if package_name not in packages or names[-1] not in classes:
+            continue
 
-async def get_smali_files(source_dir: str):
-    for root, _, files, in walk(source_dir):
-        for file in filter(files, "*.smali"):
-            yield join(root, file)
+        async for method in async_generator(data=class_analysis.get_methods()):
+            if method.name not in ignore_methods:
+                apis.add(f"{package_name}.{names[-1]}.{method.name}")
+
+    return list(apis)

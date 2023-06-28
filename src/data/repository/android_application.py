@@ -1,18 +1,16 @@
 import numpy as np
 
 from typing import Annotated, Optional
-from os import sep
-from os.path import join
 from bson import ObjectId
 from fastapi import Depends
-from androguard.core.bytecodes.apk import APK
+from androguard.misc import AnalyzeAPK
 from keras.models import load_model
 from src.domain.data.model import AndroidApplicationDetails
 from src.domain.data.model.model import MODEL_INPUT_FORMAT_APK, MODEL_SOURCE_TYPE_HDF5
 from src.domain.util import InvalidArgumentException
 from src.data.local import AndroidApplicationLocalDataSource
 from src.data.local.document import as_android_application, as_android_application_details
-from src.data.util import get_metadata, disassamble, async_generator
+from src.data.util import get_metadata, get_apis, async_generator
 from .model import ModelRepository
 from .android_application_api import AndroidApplicationApiRepository
 
@@ -37,13 +35,12 @@ class AndroidApplicationRepository:
 
     async def create_application_analysis(self, apk_bytes: bytes) -> str:
         try:
-            apk = APK(apk_bytes, raw=True)
+            a, _, dx = AnalyzeAPK(apk_bytes, raw=True)
         except:
             raise InvalidArgumentException("Invalid attachment! Only APK format is supported.")
 
-        metadata = get_metadata(apk=apk)
-        report = await disassamble(apk_bytes=apk_bytes, cache_dir=join(sep, "data", "cache"))
-        apis = list(report['apis'])
+        metadata = get_metadata(a=a)
+        apis = await get_apis(dx=dx)
 
         if not apis:
             raise InvalidArgumentException("Invalid attachment! Can't parse APK file.")
