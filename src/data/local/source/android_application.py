@@ -36,8 +36,11 @@ class AndroidApplicationLocalDataSource:
 
         return self._collection.find_one(filter)
 
-    async def find_by_certificate(self, certificate: dict) -> Optional[Any]:
+    async def find_by_certificate(self, package: str, certificate: dict) -> Optional[Any]:
         certificates = {"$elemMatch": certificate}
-        filter = {"certificates": certificates}
+        filter = {
+            "package": package,
+            "certificates": certificates
+        }
 
         return self._collection.find_one(filter)

@@ -36,7 +36,10 @@ class AndroidApplicationRepository:
         metadata = await get_metadata(apk=apk)
 
         if metadata["certificates"]:
-            document = await self._local_data_source.find_by_certificate(certificate=metadata["certificates"][0])
+            document = await self._local_data_source.find_by_certificate(
+                package=metadata["package"],
+                certificate=metadata["certificates"][0]
+            )
 
             if document is not None:
                 return str(object=document["_id"])
