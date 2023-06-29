@@ -1,8 +1,6 @@
 import numpy as np
 
 from typing import Annotated, Optional
-from os import sep
-from os.path import join
 from bson import ObjectId
 from fastapi import Depends
 from androguard.core.bytecodes.apk import APK
@@ -12,7 +10,7 @@ from src.domain.data.model.model import MODEL_INPUT_FORMAT_APK, MODEL_SOURCE_TYP
 from src.domain.util import InvalidArgumentException
 from src.data.local import AndroidApplicationLocalDataSource
 from src.data.local.document import as_android_application, as_android_application_details
-from src.data.util import get_metadata, disassamble, async_generator
+from src.data.util import get_metadata, get_apis, async_generator
 from .model import ModelRepository
 from .android_application_api import AndroidApplicationApiRepository
 
@@ -29,32 +27,32 @@ class AndroidApplicationRepository:
         self._model_repository = model_repository
         self._android_application_api_repository = android_application_api_repository
 
-    async def get_application_analysis(self, page: int = 1, limit: int = 20) -> list:
-        cursor = await self._local_data_source.find_all(page=page, limit=limit)
-        application_analysis = [as_android_application(document=document) for document in cursor]
-
-        return application_analysis
-
-    async def create_application_analysis(self, apk_bytes: bytes) -> str:
+    async def create_analysis(self, apk_bytes: bytes) -> str:
         try:
             apk = APK(apk_bytes, raw=True)
         except:
             raise InvalidArgumentException("Invalid attachment! Only APK format is supported.")
 
-        metadata = get_metadata(apk=apk)
-        report = await disassamble(apk_bytes=apk_bytes, cache_dir=join(sep, "data", "cache"))
-        apis = list(report['apis'])
+        metadata = await get_metadata(apk=apk)
+
+        if metadata["certificates"]:
+            document = await self._local_data_source.find_by_certificate(certificate=metadata["certificates"][0])
+
+            if document is not None:
+                return str(object=document["_id"])
+
+        apis = await get_apis(apk=apk)
 
         if not apis:
-            raise InvalidArgumentException("Invalid attachment! Can't parse APK file.")
+            raise InvalidArgumentException("Unable to parse attachment!")
 
-        malware_type = await self._get_application_malware_type(permissions=metadata["permissions"], apis=apis)
+        malware_type = await self._get_malware_type(permissions=metadata["permissions"], apis=apis)
         document_id = await self._local_data_source.insert(metadata=metadata, malware_type=malware_type)
 
         await self._android_application_api_repository.create_application_apis(application_id=document_id, apis=apis)
         return str(object=document_id)
 
-    async def _get_application_malware_type(self, permissions: list, apis: list) -> Optional[str]:
+    async def _get_malware_type(self, permissions: list, apis: list) -> Optional[str]:
         models = await self._model_repository.get_models(input_format=MODEL_INPUT_FORMAT_APK, limit=1)
 
         if not models:
@@ -93,7 +91,13 @@ class AndroidApplicationRepository:
 
         return model_output[index]
 
-    async def get_application_analysis_details(self, analysis_id: str) -> Optional[AndroidApplicationDetails]:
+    async def get_analysis(self, page: int = 1, limit: int = 20) -> list:
+        cursor = await self._local_data_source.find_all(page=page, limit=limit)
+        analysis = [as_android_application(document=document) for document in cursor]
+
+        return analysis
+
+    async def get_analysis_details(self, analysis_id: str) -> Optional[AndroidApplicationDetails]:
         id = ObjectId(oid=analysis_id)
         document = await self._local_data_source.find_by_id(document_id=id)
 

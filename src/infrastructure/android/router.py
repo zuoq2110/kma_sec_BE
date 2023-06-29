@@ -6,12 +6,12 @@ router = APIRouter(prefix="/android", tags=["android"])
 
 
 @router.post(path="/applications", status_code=status.HTTP_201_CREATED)
-async def create_application_analysis(
+async def create_analysis(
     file: UploadFile,
     service: Annotated[AndroidService, Depends()]
 ):
     try:
-        analysis_id = await service.create_application_analysis(file=file)
+        analysis_id = await service.create_analysis(file=file)
     except Exception as exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -25,12 +25,12 @@ async def create_application_analysis(
 
 
 @router.get(path="/applications", status_code=status.HTTP_200_OK)
-async def get_application_analysis(
+async def get_analysis(
     service: Annotated[AndroidService, Depends()],
     page: int = 1,
     limit: int = 20,
 ):
-    application_analysis = await service.get_application_analysis(page=page, limit=limit)
+    application_analysis = await service.get_analysis(page=page, limit=limit)
 
     return {
         "message": "Get Android application's analysis successfully.",
@@ -39,11 +39,11 @@ async def get_application_analysis(
 
 
 @router.get(path="/applications/{analysis_id}", status_code=status.HTTP_200_OK)
-async def get_application_analysis_details(
+async def get_analysis_details(
     analysis_id: str,
     service: Annotated[AndroidService, Depends()]
 ):
-    analysis_details = await service.get_application_analysis_details(analysis_id=analysis_id)
+    analysis_details = await service.get_analysis_details(analysis_id=analysis_id)
 
     if analysis_details == None:
         raise HTTPException(
