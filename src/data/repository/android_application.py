@@ -44,7 +44,7 @@ class AndroidApplicationRepository:
         apis = await get_apis(apk=apk)
 
         if not apis:
-            raise InvalidArgumentException("Invalid attachment! Can't parse APK file.")
+            raise InvalidArgumentException("Unable to parse attachment!")
 
         malware_type = await self._get_malware_type(permissions=metadata["permissions"], apis=apis)
         document_id = await self._local_data_source.insert(metadata=metadata, malware_type=malware_type)
