@@ -1,27 +1,43 @@
 from os.path import join
+from hashlib import sha1, sha256
 from androguard.core.bytecodes.apk import APK
 from androguard.core.analysis.analysis import Analysis
+from androguard.core.bytecodes.dvm import DalvikVMFormat
+from androguard.decompiler.decompiler import DecompilerDAD
 from .file import get_content
 from .iterable import async_generator
 
 
-def get_metadata(a: APK) -> dict:
+async def get_metadata(apk: APK) -> dict:
     metadata = {}
-    version_code = a.get_androidversion_code()
+    version_code = apk.get_androidversion_code()
 
-    metadata["name"] = a.get_app_name()
-    metadata["package"] = a.get_package()
+    metadata["name"] = apk.get_app_name()
+    metadata["package"] = apk.get_package()
     metadata["version_code"] = None if version_code is None else int(version_code)
-    metadata["version_name"] = a.get_androidversion_name()
-    metadata["user_features"] = a.get_features()
-    metadata["permissions"] = a.get_permissions()
-    metadata["activities"] = a.get_activities()
-    metadata["services"] = a.get_services()
-    metadata["receivers"] = a.get_receivers()
+    metadata["version_name"] = apk.get_androidversion_name()
+    metadata["certificates"] = await get_certificates(apk=apk)
+    metadata["user_features"] = apk.get_features()
+    metadata["permissions"] = apk.get_permissions()
+    metadata["activities"] = apk.get_activities()
+    metadata["services"] = apk.get_services()
+    metadata["receivers"] = apk.get_receivers()
     return metadata
 
 
-async def get_apis(dx: Analysis) -> list:
+async def get_certificates(apk: APK) -> list:
+    certificates = []
+
+    async for cert in async_generator(data=apk.get_certificates()):
+        sha_1 = sha1(cert.sha1).hexdigest()
+        sha_256 = sha256(cert.sha256).hexdigest()
+
+        certificates.append({"sha1": sha_1, "sha256": sha_256})
+    return certificates
+
+
+async def get_apis(apk: APK) -> list:
+    _, dx = await get_analysis(a=apk)
     packages = await get_content(path=join('libs', 'androPyTool', 'packages.txt'))
     classes = await get_content(path=join('libs', 'androPyTool', 'classes.txt'))
     ignore_methods = ["<init>", "<clinit>"]
@@ -37,5 +53,19 @@ async def get_apis(dx: Analysis) -> list:
         async for method in async_generator(data=class_analysis.get_methods()):
             if method.name not in ignore_methods:
                 apis.add(f"{package_name}.{names[-1]}.{method.name}")
-
     return list(apis)
+
+
+async def get_analysis(a: APK) -> tuple[list, Analysis]:
+    version = a.get_target_sdk_version()
+    d = []
+    dx = Analysis()
+
+    async for dex in async_generator(data=a.get_all_dex()):
+        df = DalvikVMFormat(dex, using_api=version)
+
+        dx.add(df)
+        d.append(df)
+        df.set_decompiler(decompiler=DecompilerDAD(d, dx))
+    dx.create_xref()
+    return d, dx
