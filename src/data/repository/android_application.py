@@ -34,6 +34,13 @@ class AndroidApplicationRepository:
             raise InvalidArgumentException("Invalid attachment! Only APK format is supported.")
 
         metadata = await get_metadata(apk=apk)
+
+        if metadata["certificates"]:
+            document = await self._local_data_source.find_by_certificate(certificate=metadata["certificates"][0])
+
+            if document is not None:
+                return str(object=document["_id"])
+
         apis = await get_apis(apk=apk)
 
         if not apis:
