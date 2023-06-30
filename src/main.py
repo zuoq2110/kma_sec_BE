@@ -11,7 +11,7 @@ app.add_middleware(middleware_class=CORSMiddleware, allow_origins=["*"])
 app.include_router(router=router)
 
 
-@router.head(path="/", status_code=status.HTTP_200_OK)
+@app.head(path="/", status_code=status.HTTP_200_OK)
 async def get_health():
     pass
 
