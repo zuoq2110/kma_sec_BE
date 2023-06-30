@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from .infrastructure import router
@@ -9,6 +9,11 @@ app = FastAPI(title="K-Security", version="1.0.0")
 app.add_middleware(middleware_class=CORSMiddleware, allow_origins=["*"])
 
 app.include_router(router=router)
+
+
+@router.head(path="/", status_code=status.HTTP_200_OK)
+async def get_health():
+    pass
 
 
 @app.exception_handler(HTTPException)
