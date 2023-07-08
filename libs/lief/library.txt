@@ -1,0 +1,5 @@
+name
+forwarder_chain
+timedatestamp
+import_address_table_rva
+import_lookup_table_rva

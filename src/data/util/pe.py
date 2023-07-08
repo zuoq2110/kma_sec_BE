@@ -1,209 +1,239 @@
-from pefile import PE
-from hashlib import md5
-from array import array
-from math import log
+from os.path import join
+from functools import reduce
+from operator import add
+from lief import parse
+from lief._lief import Binary
+from src.domain.util import InvalidArgumentException
+from src.data.util import get_content, async_generator
 
 
-def extract(pe: PE) -> dict:
-    features = {}
-    dos_header = get_dos_header(pe=pe)
-    file_header = get_file_header(pe=pe)
-    optional_header = get_optional_header(pe=pe)
-    section_features = extract_sections(pe=pe)
-    entry_import_features = extract_entry_import(pe=pe)
-    resources_features = extract_resources(pe=pe)
-    version_info = get_version_info(pe=pe)
+async def analyze(raw: bytes):
     try:
-        file_dll = [entryDLL.dll.decode("utf-8") for entryDLL in pe.DIRECTORY_ENTRY_IMPORT]
+        binary = parse(raw=raw)
     except:
-        file_dll = []
+        raise InvalidArgumentException("Invalid attachment! Only PE format is supported.")
 
-    features['MD5'] = md5(string=pe.write()).hexdigest()
-    features["SHA-1"] = 1
-    features["SHA-256"] = 1
-    features["SHA-512"] = 1
-    features.update(dos_header)
-    features.update(file_header)
-    features["Signature"] = pe.NT_HEADERS.Signature
-    features.update(optional_header)
-    features["LengthOfPeSections"] = len(pe.sections)
-    features.update(section_features)
-    features.update(entry_import_features)
-    try:
-        features["ExportNb"] = len(pe.DIRECTORY_ENTRY_EXPORT.symbols)
-    except:
-        features["ExportNb"] = 0
-    features.update(resources_features)
-    try:
-        features['LoadConfigurationSize'] = pe.DIRECTORY_ENTRY_LOAD_CONFIG.struct.Size
-    except:
-        features['LoadConfigurationSize'] = 0
-    features['VersionInformationSize'] = len([version_info.keys()])
-    features['DLL'] = len(file_dll)
-    features['LengthOfInformation'] = len(
-        features.keys()) + len(features.items())
-    return features
+    analysis = {}
+    dos_header = get_dos_header(binary=binary)
+    header = get_header(binary=binary)
+    optional_header = get_optional_header(binary=binary)
+    data_directories = get_data_directories(binary=binary)
+    sections = get_sections(binary=binary)
+    _import = get_import(binary=binary)
+    libraries = get_libraries(binary=binary)
+    tls = get_tls(binary=binary)
+
+    analysis["dos_header"] = await dos_header
+    analysis["header_characteristics"] = get_header_characteristics(binary=binary)
+    analysis["header"] = await header
+    analysis["optional_header"] = await optional_header
+    analysis["data_directories"] = await data_directories
+    analysis["sections"] = await sections
+    analysis["import"] = await _import
+    analysis["libraries"] = await libraries
+    analysis["tls"] = await tls
+    return analysis
 
 
-def get_dos_header(pe: PE) -> dict:
+async def get_dos_header(binary: Binary):
+    fields = await get_content(path=join("libs", "lief", "dos-header.txt"))
     dos_header = {}
-    pe_dos_header = pe.DOS_HEADER.dump_dict()
-    removable_labels = ['Structure', 'e_res', 'e_res2']
 
-    for label in removable_labels:
-        pe_dos_header.pop(label)
-    for header in pe_dos_header:
-        dos_header[header] = pe_dos_header[header]['Value']
+    async for field in async_generator(data=fields):
+        dos_header[field] = getattr(binary.dos_header, field, None)
     return dos_header
 
 
-def get_file_header(pe: PE) -> dict:
-    file_header = {}
-    pe_file_header = pe.FILE_HEADER.dump_dict()
-    takable_labels = ['Machine', 'SizeOfOptionalHeader', 'Characteristics']
+def get_header_characteristics(binary: Binary):
+    characteristics = [characteristic.value for characteristic in binary.header.characteristics_list]
+    header_characteristics = reduce(add, characteristics)
 
-    for header in pe_file_header:
-        if header in takable_labels:
-            file_header[header] = pe_file_header[header]['Value']
-    return file_header
+    return header_characteristics
 
 
-def get_optional_header(pe: PE) -> dict:
+async def get_header(binary: Binary):
+    fields = await get_content(path=join("libs", "lief", "header.txt"))
+    header = {}
+
+    header["machine"] = binary.header.machine.value
+    async for field in async_generator(data=fields):
+        value = getattr(binary.header, field, None)
+        header[field] = value if field != "signature" else reduce(add, value)
+    return header
+
+
+async def get_optional_header(binary: Binary):
+    fields = await get_content(path=join("libs", "lief", "optional-header.txt"))
     optional_header = {}
-    pe_optional_header = pe.OPTIONAL_HEADER.dump_dict()
 
-    pe_optional_header.pop('Structure')
-    for header in pe_optional_header:
-        optional_header[header] = pe_optional_header[header]['Value']
+    async for field in async_generator(data=fields):
+        if field == "magic":
+            value = binary.optional_header.magic.value
+        elif field == "subsystem":
+            value = binary.optional_header.magic.value
+        else:
+            value = getattr(binary.optional_header, field, None)
+        optional_header[field] = value
     return optional_header
 
 
-def extract_sections(pe: PE) -> dict:
-    features = {}
+async def get_data_directories(binary: Binary):
+    fields = await get_content(path=join("libs", "lief", "directory.txt"))
+    data_directories = []
 
-    entropy = [section.get_entropy() for section in pe.sections]
-    features["MeanEntropy"] = sum(entropy) / float(len(entropy))
-    features["MinEntropy"] = min(entropy)
-    features["MaxEntropy"] = max(entropy)
+    size = len(binary.data_directories)
+    size = min(16, size)
 
-    raw_sizes = [section.SizeOfRawData for section in pe.sections]
-    features["MeanRawSize"] = sum(raw_sizes) / float(len(raw_sizes))
-    features["MinRawSize"] = min(entropy)
-    features["MaxRawSize"] = max(entropy)
+    async for i in async_generator(data=range(size)):
+        data_directory = {}
 
-    virtual_sizes = [section.Misc_VirtualSize for section in pe.sections]
-    features["MeanVirtualSize"] = sum(
-        virtual_sizes) / float(len(virtual_sizes))
-    features["MinVirtualSize"] = min(entropy)
-    features["MaxVirtualSize"] = max(entropy)
-    return features
-
-
-def extract_entry_import(pe: PE) -> dict:
-    try:
-        imports = sum([x.imports for x in pe.DIRECTORY_ENTRY_IMPORT], [])
-    except:
-        imports = []
-    features = {}
-
-    try:
-        features["ImportsNbDLL"] = len(pe.DIRECTORY_ENTRY_IMPORT)
-    except:
-        features["ImportsNbDLL"] = 0
-    features["ImportsNb"] = len(imports)
-    try:
-        features["ImportsNbOrdinal"] = len(len([x for x in imports if x.name is None]))
-    except:
-        features["ImportsNbOrdinal"] = 0
-    return features
+        async for field in async_generator(data=fields):
+            if field == "section":
+                value = await _get_section(directory=binary.data_directories[i])
+            elif field == "type":
+                value = getattr(binary.data_directories[i], field, None).value
+            else:
+                value = getattr(binary.data_directories[i], field, None)
+            data_directory[field] = value
+        data_directories.append(data_directory)
+    return data_directories
 
 
-def get_entropy(data):
-    if len(data) == 0:
-        return 0.0
+async def _get_section(directory):
+    fields = await get_content(path=join("libs", "lief", "section.txt"))
+    directory_value = getattr(directory, "section", None)
+    section = {}
 
-    occurences = array('L', [0] * 256)
-    for x in data:
-        occurences[x if isinstance(x, int) else ord(x)] += 1
-
-    entropy = 0
-    for x in occurences:
-        if x:
-            p_x = float(x) / len(data)
-            entropy -= p_x * log(p_x, 2)
-
-    return entropy
-
-
-def get_resources(pe: PE) -> list:
-    resources = []
-
-    if hasattr(pe, 'DIRECTORY_ENTRY_RESOURCE'):
-        for resource_type in pe.DIRECTORY_ENTRY_RESOURCE.entries:
-            if not hasattr(resource_type, 'directory'):
-                continue
-
-            for resource_id in resource_type.directory.entries:
-                if hasattr(resource_id, 'directory'):
-                    for resource_lang in resource_id.directory.entries:
-                        offset_to_data = resource_lang.data.struct.OffsetToData
-                        size = resource_lang.data.struct.Size
-                        data = pe.get_data(offset_to_data, size)
-                        entropy = get_entropy(data)
-
-                        resources.append([entropy, size])
-    return resources
+    async for field in async_generator(data=fields):
+        if field == "name":
+            value = getattr(directory.section, field, None)
+        elif directory_value is not None:
+            value = getattr(directory_value, field, None)
+            value = 0 if value is None else value
+        else:
+            value = 0
+        section[field] = value
+    return section
 
 
-def extract_resources(pe: PE) -> dict:
-    resources = get_resources(pe=pe)
-    features = {
-        'ResourcesMeanEntropy': 0,
-        'ResourcesMinEntropy': 0,
-        'ResourcesMaxEntropy': 0,
-        'ResourcesMeanSize': 0,
-        'ResourcesMinSize': 0,
-        'ResourcesMaxSize': 0,
+async def get_sections(binary: Binary):
+    fields = await get_content(path=join("libs", "lief", "section.txt"))
+    sections = []
+
+    size = len(binary.sections)
+    size = min(5, size)
+
+    async for i in async_generator(data=range(size)):
+        _section = {}
+
+        async for field in async_generator(data=fields):
+            try:
+                _section[field] = getattr(binary.sections[i], field, None)
+            except:
+                _section[field] = None if field == "Name" else 0
+        sections.append(_section)
+    return sections
+
+
+async def get_import(binary: Binary):
+    if not binary.has_imports:
+        return None
+
+    import_directory = binary.imports[0].directory
+    fields = await get_content(path=join("libs", "lief", "directory.txt"))
+    _import = {}
+
+    async for field in async_generator(data=fields):
+        value = getattr(import_directory, field, None)
+
+        if field == "section":
+            value = await _get_section(directory=import_directory)
+        elif field == "type":
+            value = value.value
+        _import[field] = value
+    return _import
+
+
+async def get_libraries(binary: Binary):
+    if not binary.has_imports:
+        return []
+
+    fields = await get_content(path=join("libs", "lief", "library.txt"))
+    libraries = []
+
+    size = len(binary.imports)
+
+    async for i in async_generator(data=range(size)):
+        library = {}
+
+        # Get library's metadata
+        async for field in async_generator(data=fields):
+            value = getattr(binary.imports[i], field, None)
+            value = 0 if value == None and field != "name" else value
+            library[field] = value
+        library["entries"] = await _get_library_entries(_import=binary.imports[i])
+        libraries.append(library)
+        if i == 4:
+            break
+    return libraries
+
+
+async def _get_library_entries(_import, limit: int = 5):
+    fields = await get_content(path=join("libs", "lief", "library-entry.txt"))
+    library_entries = []
+
+    size = len(_import.entries)
+    size = min(size, limit)
+
+    async for i in async_generator(data=range(size)):
+        library_entry = {}
+
+        async for field in async_generator(data=fields):
+            library_entry[field] = getattr(_import.entries[i], field, None)
+        library_entries.append(library_entry)
+    return library_entries
+
+
+async def get_tls(binary: Binary):
+    if not binary.has_tls:
+        return None
+
+    tls = {}
+
+    raw_data_start, raw_data_end = binary.tls.addressof_raw_data
+    tls["addressof_callbacks"] = binary.tls.addressof_callbacks
+    tls["addressof_index"] = binary.tls.addressof_index
+    tls["raw_data_start"] = raw_data_start
+    tls["raw_data_end"] = raw_data_end
+    tls["characteristics"] = binary.tls.characteristics
+    tls["has_data_directory"] = binary.tls.has_data_directory
+    tls["data_directory"] = _get_tsl_data_directory(binary=binary)
+    tls["section"] = await _get_tsl_section(binary=binary)
+    return tls
+
+
+def _get_tsl_data_directory(binary: Binary):
+    data_directory = {
+        "rva": 0,
+        "size": 0,
+        "type": 0,
+        "section": None
     }
 
-    features['ResourcesNb'] = len(resources)
-    if len(resources) > 0:
-        entropy = [x[0] for x in resources]
-
-        features['ResourcesMeanEntropy'] = sum(entropy) / float(len(entropy))
-        features['ResourcesMinEntropy'] = min(entropy)
-        features['ResourcesMaxEntropy'] = max(entropy)
-
-        sizes = [x[1] for x in resources]
-
-        features['ResourcesMeanSize'] = sum(sizes) / float(len(sizes))
-        features['ResourcesMinSize'] = min(sizes)
-        features['ResourcesMaxSize'] = max(sizes)
-    return features
+    if binary.tls.has_data_directory:
+        data_directory["rva"] = binary.tls.directory.rva
+        data_directory["size"] = binary.tls.directory.size
+        data_directory["type"] = binary.tls.directory.type.value
+        data_directory["section"] = getattr(
+            binary.tls.directory.section, 'name', None)
+    return data_directory
 
 
-def get_version_info(pe: PE) -> dict:
-    version = {}
-    try:
-        pe_file_info = pe.FileInfo
-    except:
-        pe_file_info = []
+async def _get_tsl_section(binary: Binary):
+    fields = await get_content(path=join("libs", "lief", "section.txt"))
+    section = {}
 
-    for file_info in pe_file_info:
-        for info in file_info:
-            if info.Key == 'StringFileInfo':
-                for st in info.StringTable:
-                    for entry in st.entries.items():
-                        version[entry[0]] = entry[1]
-            if info.Key == 'VarFileInfo':
-                for var in info.Var:
-                    version[var.entry.items()[0][0]] = var.entry.items()[0][1]
-    if hasattr(pe, 'VS_FIXEDFILEINFO'):
-        version['flags'] = pe.VS_FIXEDFILEINFO[0].FileFlags
-        version['os'] = pe.VS_FIXEDFILEINFO[0].FileOS
-        version['type'] = pe.VS_FIXEDFILEINFO[0].FileType
-        version['file_version'] = pe.VS_FIXEDFILEINFO[0].FileVersionLS
-        version['product_version'] = pe.VS_FIXEDFILEINFO[0].ProductVersionLS
-        version['signature'] = pe.VS_FIXEDFILEINFO[0].Signature
-        version['struct_version'] = pe.VS_FIXEDFILEINFO[0].StrucVersion
-    return version
+    fields.remove("name")
+    async for field in async_generator(data=fields):
+        section[field] = getattr(binary.tls.section, field, 0)
+    return section

@@ -1,0 +1,6 @@
+numberof_sections
+numberof_symbols
+pointerto_symbol_table
+signature
+sizeof_optional_header
+time_date_stamps

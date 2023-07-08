@@ -10,9 +10,9 @@ class WindowsService:
         self._windows_application_respository = windows_application_respository
 
     async def create_application_analysis(self, file: UploadFile):
-        bytes = await file.read()
+        raw = await file.read()
         try:
-            analysis = await self._windows_application_respository.create_application_analysis(pe_bytes=bytes)
+            analysis = await self._windows_application_respository.create_application_analysis(raw=raw)
         except InvalidArgumentException as exception:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
