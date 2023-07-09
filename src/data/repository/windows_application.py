@@ -1,7 +1,13 @@
+import numpy as np
+
 from typing import Annotated, Optional
+from os import sep
+from os.path import join
 from fastapi import Depends
+from keras.models import load_model
+from pandas import read_csv
+from src.domain.data.model.model import MODEL_INPUT_FORMAT_PE, MODEL_SOURCE_TYPE_HDF5
 from src.data.util import analyze, normalize
-from src.domain.data.model.model import MODEL_INPUT_FORMAT_PE
 from .model import ModelRepository
 
 
@@ -22,14 +28,38 @@ class WindowsApplicationRepository:
         if not models:
             return None
 
-        # Load model
+        # # Load model
+        model_id = models[0].id
+        model_details = await self._model_repository.get_model_details(model_id=model_id)
+        model_source = await self._model_repository.get_model_source(model_id=model_id, format=MODEL_SOURCE_TYPE_HDF5)
+        model = load_model(filepath=model_source)
 
         # Pre-processing
-        x = await normalize(analysis=analysis)
+        x = normalize(analysis=analysis)
 
-        # Run model prediction with the input data.
+        thresholds_path = join(sep, "data", "files",model_id, "thresholds.csv")
+        thresholds = read_csv(filepath_or_buffer=thresholds_path)["threshold"]
+        thresholds = np.array(object=thresholds)
+        x = np.array(object=await x)
+        x = np.divide(x, thresholds, where=thresholds!=0, out=np.full_like(x, 0))
 
-        return "Benign"
+        # Transform vector input to an 2D array (44x44)
+        matrix_size = 27
+        padding_size = matrix_size * matrix_size - x.size
+        x = np.array(object=[x])
+        x = np.concatenate((x, np.zeros((x.shape[0], padding_size))), 1)
+        x = x.reshape(x.shape[0], matrix_size, matrix_size, 1)
+
+        # # Run model prediction with the input data.
+        y = model(x)[0]
+        y = list(y)
+
+        # # Post-processing: find the digit that has the highest probability
+        model_output = model_details.output
+        highest_probability = max(y)
+        index = y.index(highest_probability)
+
+        return model_output[index]
 
     async def get_application_analysis(self, analysis_id: str) -> Optional[dict]:
         return None
