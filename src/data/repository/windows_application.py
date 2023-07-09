@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 from fastapi import Depends
-from src.data.util import analyze
+from src.data.util import analyze, normalize
 from src.domain.data.model.model import MODEL_INPUT_FORMAT_PE
 from .model import ModelRepository
 
@@ -25,6 +25,7 @@ class WindowsApplicationRepository:
         # Load model
 
         # Pre-processing
+        x = await normalize(analysis=analysis)
 
         # Run model prediction with the input data.
 

@@ -2,7 +2,7 @@ from aiofiles import open
 
 
 async def save(data, path: str):
-    async with open(path, mode="w") as writer:
+    async with open(path, mode="wb") as writer:
         await writer.write(data)
         await writer.flush()
 

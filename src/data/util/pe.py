@@ -121,7 +121,7 @@ async def get_sections(binary: Binary):
     sections = []
 
     size = len(binary.sections)
-    size = min(5, size)
+    size = min(6, size)
 
     async for i in async_generator(data=range(size)):
         _section = {}
@@ -206,7 +206,6 @@ async def get_tls(binary: Binary):
     tls["raw_data_start"] = raw_data_start
     tls["raw_data_end"] = raw_data_end
     tls["characteristics"] = binary.tls.characteristics
-    tls["has_data_directory"] = binary.tls.has_data_directory
     tls["data_directory"] = _get_tsl_data_directory(binary=binary)
     tls["section"] = await _get_tsl_section(binary=binary)
     return tls
@@ -214,18 +213,19 @@ async def get_tls(binary: Binary):
 
 def _get_tsl_data_directory(binary: Binary):
     data_directory = {
+        "has_section": False,
         "rva": 0,
         "size": 0,
         "type": 0,
-        "section": None
+        "name": None
     }
 
     if binary.tls.has_data_directory:
+        data_directory["has_section"] = binary.tls.has_data_directory
         data_directory["rva"] = binary.tls.directory.rva
         data_directory["size"] = binary.tls.directory.size
         data_directory["type"] = binary.tls.directory.type.value
-        data_directory["section"] = getattr(
-            binary.tls.directory.section, 'name', None)
+        data_directory["name"] = getattr(binary.tls.directory.section, 'name', None)
     return data_directory
 
 
