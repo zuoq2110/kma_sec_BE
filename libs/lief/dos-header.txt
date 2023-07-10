@@ -1,0 +1,17 @@
+addressof_new_exeheader
+addressof_relocation_table
+checksum
+file_size_in_pages
+header_size_in_paragraphs
+initial_ip
+initial_relative_cs
+initial_relative_ss
+initial_sp
+magic
+maximum_extra_paragraphs
+minimum_extra_paragraphs
+numberof_relocation
+oem_id
+oem_info
+overlay_number
+used_bytes_in_the_last_page

@@ -68,20 +68,7 @@ class AndroidApplicationRepository:
         model = load_model(filepath=model_source)
 
         # Pre-processing
-        model_input = await self._model_repository.get_model_input(model_id=model_id)
-        permissions = [permission.split(".")[-1].upper() async for permission in async_generator(permissions)]
-        size = len(model_input)
-        buffer = [0] * size
-
-        async for i in async_generator(data=range(size)):
-            label = model_input[i]
-            buffer[i] = 1 if label in permissions or label in apis else 0
-
-        matrix_size = 44
-        padding_size = matrix_size * matrix_size - size
-        x = np.array(object=[buffer])
-        x = np.concatenate((x, np.zeros((x.shape[0], padding_size))), 1)
-        x = x.reshape(x.shape[0], matrix_size, matrix_size, 1)
+        x = await self._normalize(permissions=permissions, apis=apis, model_id=model_id)
 
         # Run model prediction with the input data.
         y = model(x)[0]
@@ -93,6 +80,25 @@ class AndroidApplicationRepository:
         index = y.index(highest_probability)
 
         return model_output[index]
+
+    async def _normalize(self, permissions: list, apis: list, model_id: str):
+        model_input = await self._model_repository.get_model_input(model_id=model_id)
+        permissions = [permission.split(".")[-1].upper() async for permission in async_generator(permissions)]
+        size = len(model_input)
+        buffer = [0] * size
+
+        # Combine permissions and apis to values 0/1 to an array
+        async for i in async_generator(data=range(size)):
+            label = model_input[i]
+            buffer[i] = 1 if label in permissions or label in apis else 0
+
+        # Transform vector input to an 2D array (44x44)
+        matrix_size = 44
+        padding_size = matrix_size * matrix_size - size
+        x = np.array(object=[buffer])
+        x = np.concatenate((x, np.zeros((x.shape[0], padding_size))), 1)
+        x = x.reshape(x.shape[0], matrix_size, matrix_size, 1)
+        return x
 
     async def get_analysis(self, page: int = 1, limit: int = 20) -> list:
         cursor = await self._local_data_source.find_all(page=page, limit=limit)

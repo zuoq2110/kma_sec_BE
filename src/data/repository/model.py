@@ -1,7 +1,7 @@
 from typing import Annotated, Optional
 from os.path import getsize
 from fastapi import Depends
-from src.domain.data.model import Model, ModelDetails, ModelDataset, ModelHistory
+from src.domain.data.model import Model, ModelDetails, ModelHistory
 from src.domain.data.model.model import MODEL_TYPE_PICKLE, MODEL_SOURCE_TYPE_HDF5, MODEL_SOURCE_TYPE_PICKLE
 from src.data.local import ModelLocalDataSource
 from src.data.local.document import as_model, as_model_details, as_model_dataset, as_model_history

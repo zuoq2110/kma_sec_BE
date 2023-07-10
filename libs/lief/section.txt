@@ -1,0 +1,13 @@
+characteristics
+entropy
+name
+numberof_line_numbers
+numberof_relocations
+offset
+pointerto_line_numbers
+pointerto_raw_data
+pointerto_relocation
+size
+sizeof_raw_data
+virtual_address
+virtual_size
