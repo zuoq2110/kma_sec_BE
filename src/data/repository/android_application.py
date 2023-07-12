@@ -1,6 +1,7 @@
 import numpy as np
 
 from typing import Annotated, Optional
+from os import environ
 from bson import ObjectId
 from fastapi import Depends
 from androguard.core.bytecodes.apk import APK
@@ -13,6 +14,10 @@ from src.data.local.document import as_android_application, as_android_applicati
 from src.data.util import get_metadata, get_apis, async_generator
 from .model import ModelRepository
 from .android_application_api import AndroidApplicationApiRepository
+
+
+# Configure the Tensorflow logging module
+environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 
 class AndroidApplicationRepository:
