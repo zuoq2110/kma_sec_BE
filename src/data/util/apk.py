@@ -1,3 +1,4 @@
+from logging import getLogger, ERROR
 from os.path import join
 from hashlib import sha1, sha256
 from androguard.core.bytecodes.apk import APK
@@ -6,6 +7,10 @@ from androguard.core.bytecodes.dvm import DalvikVMFormat
 from androguard.decompiler.decompiler import DecompilerDAD
 from .file import get_content
 from .iterable import async_generator
+
+
+# Configure the AndroGuard logging module
+getLogger('androguard').setLevel(ERROR)
 
 
 async def get_metadata(apk: APK) -> dict:
