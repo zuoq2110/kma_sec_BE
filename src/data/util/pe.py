@@ -1,10 +1,14 @@
 from os.path import join
 from functools import reduce
 from operator import add
-from lief import parse
-from lief._lief import Binary
+from lief import parse, Binary
+from lief.logging import set_level, LOGGING_LEVEL
 from src.domain.util import InvalidArgumentException
 from src.data.util import get_content, async_generator
+
+
+# Configure the LIEF logging module
+set_level(LOGGING_LEVEL.ERROR)
 
 
 async def analyze(raw: bytes):

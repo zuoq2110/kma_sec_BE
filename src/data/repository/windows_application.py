@@ -1,7 +1,7 @@
 import numpy as np
 
 from typing import Annotated, Optional
-from os import sep
+from os import sep, environ
 from os.path import join
 from fastapi import Depends
 from keras.models import load_model
@@ -9,6 +9,9 @@ from pandas import read_csv
 from src.domain.data.model.model import MODEL_INPUT_FORMAT_PE, MODEL_SOURCE_TYPE_HDF5
 from src.data.util import analyze, normalize
 from .model import ModelRepository
+
+# Configure the Tensorflow logging module
+environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 
 class WindowsApplicationRepository:
