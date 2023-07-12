@@ -14,17 +14,17 @@ async def analyze(raw: bytes):
         raise InvalidArgumentException("Invalid attachment! Only PE format is supported.")
 
     analysis = {}
-    dos_header = get_dos_header(binary=binary)
-    header = get_header(binary=binary)
-    optional_header = get_optional_header(binary=binary)
-    data_directories = get_data_directories(binary=binary)
-    sections = get_sections(binary=binary)
-    _import = get_import(binary=binary)
-    libraries = get_libraries(binary=binary)
-    tls = get_tls(binary=binary)
+    dos_header = __get_dos_header(binary=binary)
+    header = __get_header(binary=binary)
+    optional_header = __get_optional_header(binary=binary)
+    data_directories = __get_data_directories(binary=binary)
+    sections = __get_sections(binary=binary)
+    _import = __get_import(binary=binary)
+    libraries = __get_libraries(binary=binary)
+    tls = __get_tls(binary=binary)
 
     analysis["dos_header"] = await dos_header
-    analysis["header_characteristics"] = get_header_characteristics(binary=binary)
+    analysis["header_characteristics"] = __get_header_characteristics(binary=binary)
     analysis["header"] = await header
     analysis["optional_header"] = await optional_header
     analysis["data_directories"] = await data_directories
@@ -35,7 +35,7 @@ async def analyze(raw: bytes):
     return analysis
 
 
-async def get_dos_header(binary: Binary):
+async def __get_dos_header(binary: Binary):
     fields = await get_content(path=join("libs", "lief", "dos-header.txt"))
     dos_header = {}
 
@@ -44,14 +44,14 @@ async def get_dos_header(binary: Binary):
     return dos_header
 
 
-def get_header_characteristics(binary: Binary):
+def __get_header_characteristics(binary: Binary):
     characteristics = [characteristic.value for characteristic in binary.header.characteristics_list]
     header_characteristics = reduce(add, characteristics)
 
     return header_characteristics
 
 
-async def get_header(binary: Binary):
+async def __get_header(binary: Binary):
     fields = await get_content(path=join("libs", "lief", "header.txt"))
     header = {}
 
@@ -62,7 +62,7 @@ async def get_header(binary: Binary):
     return header
 
 
-async def get_optional_header(binary: Binary):
+async def __get_optional_header(binary: Binary):
     fields = await get_content(path=join("libs", "lief", "optional-header.txt"))
     optional_header = {}
 
@@ -70,14 +70,14 @@ async def get_optional_header(binary: Binary):
         if field == "magic":
             value = binary.optional_header.magic.value
         elif field == "subsystem":
-            value = binary.optional_header.magic.value
+            value = binary.optional_header.subsystem.value
         else:
             value = getattr(binary.optional_header, field, None)
         optional_header[field] = value
     return optional_header
 
 
-async def get_data_directories(binary: Binary):
+async def __get_data_directories(binary: Binary):
     fields = await get_content(path=join("libs", "lief", "directory.txt"))
     data_directories = []
 
@@ -89,7 +89,7 @@ async def get_data_directories(binary: Binary):
 
         async for field in async_generator(data=fields):
             if field == "section":
-                value = await _get_section(directory=binary.data_directories[i])
+                value = await __get_section(directory=binary.data_directories[i])
             elif field == "type":
                 value = getattr(binary.data_directories[i], field, None).value
             else:
@@ -99,7 +99,7 @@ async def get_data_directories(binary: Binary):
     return data_directories
 
 
-async def _get_section(directory):
+async def __get_section(directory):
     fields = await get_content(path=join("libs", "lief", "section.txt"))
     directory_value = getattr(directory, "section", None)
     section = {}
@@ -116,7 +116,7 @@ async def _get_section(directory):
     return section
 
 
-async def get_sections(binary: Binary):
+async def __get_sections(binary: Binary):
     fields = await get_content(path=join("libs", "lief", "section.txt"))
     sections = []
 
@@ -135,7 +135,7 @@ async def get_sections(binary: Binary):
     return sections
 
 
-async def get_import(binary: Binary):
+async def __get_import(binary: Binary):
     if not binary.has_imports:
         return None
 
@@ -147,14 +147,14 @@ async def get_import(binary: Binary):
         value = getattr(import_directory, field, None)
 
         if field == "section":
-            value = await _get_section(directory=import_directory)
+            value = await __get_section(directory=import_directory)
         elif field == "type":
             value = value.value
         _import[field] = value
     return _import
 
 
-async def get_libraries(binary: Binary):
+async def __get_libraries(binary: Binary):
     if not binary.has_imports:
         return []
 
@@ -171,14 +171,14 @@ async def get_libraries(binary: Binary):
             value = getattr(binary.imports[i], field, None)
             value = 0 if value == None and field != "name" else value
             library[field] = value
-        library["entries"] = await _get_library_entries(_import=binary.imports[i])
+        library["entries"] = await __get_library_entries(_import=binary.imports[i])
         libraries.append(library)
         if i == 4:
             break
     return libraries
 
 
-async def _get_library_entries(_import, limit: int = 5):
+async def __get_library_entries(_import, limit: int = 5):
     fields = await get_content(path=join("libs", "lief", "library-entry.txt"))
     library_entries = []
 
@@ -194,7 +194,7 @@ async def _get_library_entries(_import, limit: int = 5):
     return library_entries
 
 
-async def get_tls(binary: Binary):
+async def __get_tls(binary: Binary):
     if not binary.has_tls:
         return None
 
@@ -206,12 +206,12 @@ async def get_tls(binary: Binary):
     tls["raw_data_start"] = raw_data_start
     tls["raw_data_end"] = raw_data_end
     tls["characteristics"] = binary.tls.characteristics
-    tls["data_directory"] = _get_tsl_data_directory(binary=binary)
-    tls["section"] = await _get_tsl_section(binary=binary)
+    tls["data_directory"] = __get_tsl_data_directory(binary=binary)
+    tls["section"] = await __get_tsl_section(binary=binary)
     return tls
 
 
-def _get_tsl_data_directory(binary: Binary):
+def __get_tsl_data_directory(binary: Binary):
     data_directory = {
         "has_section": False,
         "rva": 0,
@@ -229,7 +229,7 @@ def _get_tsl_data_directory(binary: Binary):
     return data_directory
 
 
-async def _get_tsl_section(binary: Binary):
+async def __get_tsl_section(binary: Binary):
     fields = await get_content(path=join("libs", "lief", "section.txt"))
     section = {}
 
