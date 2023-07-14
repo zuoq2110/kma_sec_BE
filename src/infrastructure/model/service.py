@@ -20,7 +20,7 @@ class ModelService:
         try:
             state = None if state is None else ModelState(value=state)
         except ValueError:
-            raise InvalidArgumentException("Model status is invalid!")
+            raise InvalidArgumentException("Model state is invalid!")
 
         return await self.__model_repository.get_models(
             input_format=input_format,
