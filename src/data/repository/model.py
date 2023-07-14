@@ -1,7 +1,7 @@
 from typing import Annotated, Optional
 from os.path import getsize
 from fastapi import Depends
-from src.domain.data.model import ModelState, Model, ModelDetails, ModelHistory
+from src.domain.data.model import ModelInputFormat, ModelState, Model, ModelDetails, ModelHistory
 from src.domain.data.model.model import ModelType, MODEL_SOURCE_TYPE_HDF5, MODEL_SOURCE_TYPE_PICKLE
 from src.data.local import ModelLocalDataSource
 from src.data.local.document import as_model, as_model_details, as_model_dataset, as_model_history
@@ -17,13 +17,13 @@ class ModelRepository:
 
     async def get_models(
         self,
-        input_format: Optional[str] = None,
+        input_format: Optional[ModelInputFormat] = None,
         state: Optional[ModelState] = None,
         page: int = 1,
         limit: int = 20
     ) -> list[Model]:
         cursor = await self._local_data_source.find_all(
-            input_format=input_format,
+            input_format=None if input_format is None else input_format.value,
             state=None if state is None else state.value,
             page=page,
             limit=limit

@@ -6,7 +6,7 @@ from os.path import join
 from fastapi import Depends
 from keras.models import load_model
 from pandas import read_csv
-from src.domain.data.model.model import MODEL_INPUT_FORMAT_PE, MODEL_SOURCE_TYPE_HDF5, ModelState
+from src.domain.data.model.model import ModelInputFormat, MODEL_SOURCE_TYPE_HDF5, ModelState
 from src.data.util import analyze, normalize
 from .model import ModelRepository
 
@@ -27,7 +27,7 @@ class WindowsApplicationRepository:
 
     async def __get_application_malware_type(self, analysis: dict) -> Optional[str]:
         models = await self.__model_repository.get_models(
-            input_format=MODEL_INPUT_FORMAT_PE,
+            input_format=ModelInputFormat.PE,
             state=ModelState.ACTIVATE,
             limit=1
         )

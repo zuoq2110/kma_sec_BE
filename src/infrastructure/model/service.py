@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 from fastapi import Depends
-from src.domain.data.model import ModelState
+from src.domain.data.model import ModelInputFormat, ModelState
 from src.domain.util import InvalidArgumentException
 from src.data import ModelRepository
 
@@ -21,6 +21,10 @@ class ModelService:
             state = None if state is None else ModelState(value=state)
         except ValueError:
             raise InvalidArgumentException("Model state is invalid!")
+        try:
+            input_format = None if input_format is None else ModelInputFormat(value=input_format)
+        except ValueError:
+            raise InvalidArgumentException("Model input format is invalid!")
 
         return await self.__model_repository.get_models(
             input_format=input_format,

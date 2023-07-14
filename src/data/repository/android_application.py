@@ -7,7 +7,7 @@ from fastapi import Depends
 from androguard.core.bytecodes.apk import APK
 from keras.models import load_model
 from src.domain.data.model import AndroidApplicationDetails
-from src.domain.data.model.model import MODEL_INPUT_FORMAT_APK, MODEL_SOURCE_TYPE_HDF5, ModelState
+from src.domain.data.model.model import ModelInputFormat, MODEL_SOURCE_TYPE_HDF5, ModelState
 from src.domain.util import InvalidArgumentException
 from src.data.local import AndroidApplicationLocalDataSource
 from src.data.local.document import as_android_application, as_android_application_details
@@ -26,11 +26,11 @@ class AndroidApplicationRepository:
         self,
         local_data_source: Annotated[AndroidApplicationLocalDataSource, Depends()],
         model_repository: Annotated[ModelRepository, Depends()],
-        android_application_api_repository: Annotated[AndroidApplicationApiRepository, Depends()]
+        application_api_repository: Annotated[AndroidApplicationApiRepository, Depends()]
     ):
-        self._local_data_source = local_data_source
-        self._model_repository = model_repository
-        self._android_application_api_repository = android_application_api_repository
+        self.__local_data_source = local_data_source
+        self.__model_repository = model_repository
+        self.__application_api_repository = application_api_repository
 
     async def create_analysis(self, apk_bytes: bytes) -> str:
         try:
@@ -41,7 +41,7 @@ class AndroidApplicationRepository:
         metadata = await get_metadata(apk=apk)
 
         if metadata["certificates"]:
-            document = await self._local_data_source.find_by_certificate(
+            document = await self.__local_data_source.find_by_certificate(
                 package=metadata["package"],
                 certificate=metadata["certificates"][0]
             )
@@ -54,15 +54,15 @@ class AndroidApplicationRepository:
         if not apis:
             raise InvalidArgumentException("Unable to parse attachment!")
 
-        malware_type = await self._get_malware_type(permissions=metadata["permissions"], apis=apis)
-        document_id = await self._local_data_source.insert(metadata=metadata, malware_type=malware_type)
+        malware_type = await self.__get_malware_type(permissions=metadata["permissions"], apis=apis)
+        document_id = await self.__local_data_source.insert(metadata=metadata, malware_type=malware_type)
 
-        await self._android_application_api_repository.create_application_apis(application_id=document_id, apis=apis)
+        await self.__application_api_repository.create_application_apis(application_id=document_id, apis=apis)
         return str(object=document_id)
 
-    async def _get_malware_type(self, permissions: list, apis: list) -> Optional[str]:
-        models = await self._model_repository.get_models(
-            input_format=MODEL_INPUT_FORMAT_APK,
+    async def __get_malware_type(self, permissions: list, apis: list) -> Optional[str]:
+        models = await self.__model_repository.get_models(
+            input_format=ModelInputFormat.APK,
             state=ModelState.ACTIVATE,
             limit=1
         )
@@ -72,12 +72,12 @@ class AndroidApplicationRepository:
 
         # Load model
         model_id = models[0].id
-        model_details = await self._model_repository.get_model_details(model_id=model_id)
-        model_source = await self._model_repository.get_model_source(model_id=model_id, format=MODEL_SOURCE_TYPE_HDF5)
+        model_details = await self.__model_repository.get_model_details(model_id=model_id)
+        model_source = await self.__model_repository.get_model_source(model_id=model_id, format=MODEL_SOURCE_TYPE_HDF5)
         model = load_model(filepath=model_source)
 
         # Pre-processing
-        x = await self._normalize(permissions=permissions, apis=apis, model_id=model_id)
+        x = await self.__normalize(permissions=permissions, apis=apis, model_id=model_id)
 
         # Run model prediction with the input data.
         y = model(x)[0]
@@ -90,8 +90,8 @@ class AndroidApplicationRepository:
 
         return model_output[index]
 
-    async def _normalize(self, permissions: list, apis: list, model_id: str):
-        model_input = await self._model_repository.get_model_input(model_id=model_id)
+    async def __normalize(self, permissions: list, apis: list, model_id: str):
+        model_input = await self.__model_repository.get_model_input(model_id=model_id)
         permissions = [permission.split(".")[-1].upper() async for permission in async_generator(permissions)]
         size = len(model_input)
         buffer = [0] * size
@@ -110,13 +110,13 @@ class AndroidApplicationRepository:
         return x
 
     async def get_analysis(self, page: int = 1, limit: int = 20) -> list:
-        cursor = await self._local_data_source.find_all(page=page, limit=limit)
+        cursor = await self.__local_data_source.find_all(page=page, limit=limit)
         analysis = [as_android_application(document=document) for document in cursor]
 
         return analysis
 
     async def get_analysis_details(self, analysis_id: str) -> Optional[AndroidApplicationDetails]:
         id = ObjectId(oid=analysis_id)
-        document = await self._local_data_source.find_by_id(document_id=id)
+        document = await self.__local_data_source.find_by_id(document_id=id)
 
         return None if document is None else as_android_application_details(document=document)

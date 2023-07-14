@@ -1,4 +1,4 @@
-from src.domain.data.model import ModelType, ModelState, Model, ModelDetails, ModelDataset, ModelHistory
+from src.domain.data.model import *
 
 
 def as_model(document) -> Model:
@@ -6,7 +6,7 @@ def as_model(document) -> Model:
         id=str(object=document['_id']),
         version=document['version'],
         type=ModelType(value=document['type']),
-        input_format=document['input_format'],
+        input_format=ModelInputFormat(value=document['input_format']),
         state=ModelState(value=document['state']),
         created_at=document['created_at'].isoformat()
     )
@@ -18,7 +18,7 @@ def as_model_details(document, source_size: int) -> ModelDetails:
         version=document['version'],
         type=ModelType(value=document['type']),
         state=ModelState(value=document['state']),
-        input_format=document['input_format'],
+        input_format=ModelInputFormat(value=document['input_format']),
         size=source_size,
         output=document['output'],
         accuracy=document['accuracy'],
