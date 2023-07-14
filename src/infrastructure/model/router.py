@@ -2,6 +2,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from src.domain.util import InvalidArgumentException
+from .schema import *
 from .service import ModelService
 
 
@@ -119,3 +120,20 @@ async def get_model_source(
         media_type='application/octet-stream',
         filename=f"model.{format}"
     )
+
+
+@router.patch(path="/{model_id}", status_code=status.HTTP_200_OK)
+async def update_model(
+    model_id: str,
+    body: ModelStateBody,
+    service: Annotated[ModelService, Depends()]
+):
+    try:
+        await service.update_model_state(model_id=model_id, state=body.state)
+    except InvalidArgumentException as exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exception))
+
+    return {
+        "message": "Update model state successfully.",
+        "data": None
+    }

@@ -14,14 +14,14 @@ from src.data.util import save
 class ModelLocalDataSource:
 
     def __init__(self, database: Annotated[Database, Depends(get_database)]) -> None:
-        self._collection = database["models"]
+        self.__collection = database["models"]
 
     async def insert(self, model: bytes, metadata: dict, format: str) -> ObjectId:
         document = metadata.copy()
 
         # Save the model's document to the database
         document["created_at"] = datetime.now(tz=timezone.utc)
-        document_id = self._collection \
+        document_id = self.__collection \
             .insert_one(document=document) \
             .inserted_id
 
@@ -45,7 +45,7 @@ class ModelLocalDataSource:
             query['input_format'] = input_format
         if state != None:
             query['state'] = state
-        return self._collection \
+        return self.__collection \
             .find(query, fields) \
             .sort([('created_at', DESCENDING)]) \
             .skip(skip=skip) \
@@ -57,7 +57,7 @@ class ModelLocalDataSource:
         except:
             return None
 
-        return self._collection.find_one({"_id": id}, {"datasets": 0, "input": 0, "history": 0})
+        return self.__collection.find_one({"_id": id}, {"datasets": 0, "input": 0, "history": 0})
 
     async def find_datasets_by_id(self, model_id: str) -> Optional[list]:
         try:
@@ -65,7 +65,7 @@ class ModelLocalDataSource:
         except:
             return None
 
-        document = self._collection.find_one({"_id": id}, {"datasets": 1})
+        document = self.__collection.find_one({"_id": id}, {"datasets": 1})
 
         return None if document is None else document["datasets"]
 
@@ -75,7 +75,7 @@ class ModelLocalDataSource:
         except:
             return None
 
-        document = self._collection.find_one({"_id": id}, {"input": 1})
+        document = self.__collection.find_one({"_id": id}, {"input": 1})
 
         return None if document is None else document["input"]
 
@@ -85,7 +85,7 @@ class ModelLocalDataSource:
         except:
             return None
 
-        document = self._collection.find_one({"_id": id}, {"history": 1})
+        document = self.__collection.find_one({"_id": id}, {"history": 1})
 
         return None if document is None else document["history"]
 
@@ -95,7 +95,7 @@ class ModelLocalDataSource:
         except:
             return None
 
-        count = self._collection.count_documents({"_id": id}, None, None, limit=1)
+        count = self.__collection.count_documents({"_id": id}, None, None, limit=1)
 
         if count != 1:
             return None
@@ -103,3 +103,13 @@ class ModelLocalDataSource:
         path = join(sep, "data", "files", model_id, f"model.{format}")
 
         return path if isfile(path) else None
+
+    async def update_state_by_id(self, model_id: str, state: str) -> bool:
+        try:
+            id = ObjectId(oid=model_id)
+        except:
+            return False
+        filter = {"_id": id}
+        result = self.__collection.update_one(filter, { "$set": { "state": state } })
+
+        return result.modified_count > 0

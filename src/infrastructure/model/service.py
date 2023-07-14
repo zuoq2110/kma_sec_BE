@@ -51,3 +51,14 @@ class ModelService:
         except ValueError:
             raise InvalidArgumentException("Model source format is invalid!")
         return await self.__model_repository.get_model_source(model_id=model_id, format=format)
+
+    async def update_model_state(self, model_id: str, state: str):
+        try:
+            state = None if state is None else ModelState(value=state)
+        except ValueError:
+            raise InvalidArgumentException("Model state is invalid!")
+
+        if state == ModelState.TRAINING:
+            raise InvalidArgumentException("Model state is invalid!")
+
+        await self.__model_repository.update_model_state(model_id=model_id, state=state)
