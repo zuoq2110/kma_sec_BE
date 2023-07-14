@@ -7,7 +7,7 @@ from fastapi import Depends
 from androguard.core.bytecodes.apk import APK
 from keras.models import load_model
 from src.domain.data.model import AndroidApplicationDetails
-from src.domain.data.model.model import ModelInputFormat, MODEL_SOURCE_TYPE_HDF5, ModelState
+from src.domain.data.model.model import ModelInputFormat, ModelState, ModelSourceFormat
 from src.domain.util import InvalidArgumentException
 from src.data.local import AndroidApplicationLocalDataSource
 from src.data.local.document import as_android_application, as_android_application_details
@@ -73,7 +73,7 @@ class AndroidApplicationRepository:
         # Load model
         model_id = models[0].id
         model_details = await self.__model_repository.get_model_details(model_id=model_id)
-        model_source = await self.__model_repository.get_model_source(model_id=model_id, format=MODEL_SOURCE_TYPE_HDF5)
+        model_source = await self.__model_repository.get_model_source(model_id=model_id, format=ModelSourceFormat.HDF5)
         model = load_model(filepath=model_source)
 
         # Pre-processing

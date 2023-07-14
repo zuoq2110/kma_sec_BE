@@ -2,11 +2,6 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-MODEL_SOURCE_TYPE_HDF5 = "h5"
-MODEL_SOURCE_TYPE_TFLITE = "tflite"
-MODEL_SOURCE_TYPE_PICKLE = "pickle"
-
-
 class ModelType(Enum):
     HDF5 = "HDF5/H5"
     PICKLE = "PICKLE"
@@ -61,3 +56,9 @@ class ModelHistory:
     val_accuracy: list[float]
     loss: list[float]
     val_loss: list[float]
+
+
+class ModelSourceFormat(Enum):
+    HDF5 = "h5"
+    TFLITE = "tflite"
+    PICKLE = "pickle"

@@ -6,7 +6,7 @@ from os.path import join
 from fastapi import Depends
 from keras.models import load_model
 from pandas import read_csv
-from src.domain.data.model.model import ModelInputFormat, MODEL_SOURCE_TYPE_HDF5, ModelState
+from src.domain.data.model.model import ModelInputFormat, ModelState, ModelSourceFormat
 from src.data.util import analyze, normalize
 from .model import ModelRepository
 
@@ -38,7 +38,7 @@ class WindowsApplicationRepository:
         # # Load model
         model_id = models[0].id
         model_details = await self.__model_repository.get_model_details(model_id=model_id)
-        model_source = await self.__model_repository.get_model_source(model_id=model_id, format=MODEL_SOURCE_TYPE_HDF5)
+        model_source = await self.__model_repository.get_model_source(model_id=model_id, format=ModelSourceFormat.HDF5)
         model = load_model(filepath=model_source)
 
         # Pre-processing

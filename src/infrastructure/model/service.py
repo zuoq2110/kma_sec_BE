@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 from fastapi import Depends
-from src.domain.data.model import ModelInputFormat, ModelState
+from src.domain.data.model import ModelInputFormat, ModelState, ModelSourceFormat
 from src.domain.util import InvalidArgumentException
 from src.data import ModelRepository
 
@@ -46,4 +46,8 @@ class ModelService:
         return await self.__model_repository.get_model_history(model_id=model_id)
 
     async def get_model_source(self, model_id: str, format: str):
+        try:
+            format = ModelSourceFormat(value=format)
+        except ValueError:
+            raise InvalidArgumentException("Model source format is invalid!")
         return await self.__model_repository.get_model_source(model_id=model_id, format=format)

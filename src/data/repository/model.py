@@ -1,8 +1,7 @@
 from typing import Annotated, Optional
 from os.path import getsize
 from fastapi import Depends
-from src.domain.data.model import ModelInputFormat, ModelState, Model, ModelDetails, ModelHistory
-from src.domain.data.model.model import ModelType, MODEL_SOURCE_TYPE_HDF5, MODEL_SOURCE_TYPE_PICKLE
+from src.domain.data.model.model import *
 from src.data.local import ModelLocalDataSource
 from src.data.local.document import as_model, as_model_details, as_model_dataset, as_model_history
 
@@ -38,7 +37,7 @@ class ModelRepository:
         if document == None:
             return None
 
-        format = MODEL_SOURCE_TYPE_PICKLE if document['type'] == ModelType.PICKLE.value else MODEL_SOURCE_TYPE_HDF5
+        format = ModelSourceFormat.PICKLE if document['type'] == ModelType.PICKLE.value else ModelSourceFormat.HDF5
         source = await self.get_model_source(model_id=model_id, format=format)
         size = 0 if source is None else getsize(filename=source)
 
@@ -54,8 +53,8 @@ class ModelRepository:
 
         return None if document is None else as_model_history(document=document)
 
-    async def get_model_source(self, model_id: str, format: str) -> Optional[str]:
-        return await self._local_data_source.find_source_by_id(model_id=model_id, format=format)
+    async def get_model_source(self, model_id: str, format: ModelSourceFormat) -> Optional[str]:
+        return await self._local_data_source.find_source_by_id(model_id=model_id, format=format.value)
 
     async def get_model_input(self, model_id: str) -> Optional[list]:
         return await self._local_data_source.find_input_by_id(model_id=model_id)
