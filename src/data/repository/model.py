@@ -2,7 +2,7 @@ from typing import Annotated, Optional
 from os.path import getsize
 from fastapi import Depends
 from src.domain.data.model import ModelState, Model, ModelDetails, ModelHistory
-from src.domain.data.model.model import MODEL_TYPE_PICKLE, MODEL_SOURCE_TYPE_HDF5, MODEL_SOURCE_TYPE_PICKLE
+from src.domain.data.model.model import ModelType, MODEL_SOURCE_TYPE_HDF5, MODEL_SOURCE_TYPE_PICKLE
 from src.data.local import ModelLocalDataSource
 from src.data.local.document import as_model, as_model_details, as_model_dataset, as_model_history
 
@@ -38,7 +38,7 @@ class ModelRepository:
         if document == None:
             return None
 
-        format = MODEL_SOURCE_TYPE_PICKLE if document['type'] == MODEL_TYPE_PICKLE else MODEL_SOURCE_TYPE_HDF5
+        format = MODEL_SOURCE_TYPE_PICKLE if document['type'] == ModelType.PICKLE.value else MODEL_SOURCE_TYPE_HDF5
         source = await self.get_model_source(model_id=model_id, format=format)
         size = 0 if source is None else getsize(filename=source)
 

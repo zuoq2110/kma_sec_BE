@@ -2,15 +2,17 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-MODEL_TYPE_HDF5 = 'HDF5/H5'
-MODEL_TYPE_PICKLE = 'PICKLE'
-
 MODEL_INPUT_FORMAT_APK = "APK"
 MODEL_INPUT_FORMAT_PE = "PE"
 
 MODEL_SOURCE_TYPE_HDF5 = "h5"
 MODEL_SOURCE_TYPE_TFLITE = "tflite"
 MODEL_SOURCE_TYPE_PICKLE = "pickle"
+
+
+class ModelType(Enum):
+    HDF5 = "HDF5/H5"
+    PICKLE = "PICKLE"
 
 
 class ModelState(Enum):
@@ -23,7 +25,7 @@ class ModelState(Enum):
 class Model:
     id: str
     version: str
-    type: str
+    type: ModelType
     input_format: str
     state: ModelState
     created_at: str
@@ -33,9 +35,10 @@ class Model:
 class ModelDetails:
     id: str
     version: str
-    type: str
-    size: int
+    type: ModelType
     input_format: str
+    state: ModelState
+    size: int
     output: list[str]
     accuracy: float
     precision: float
