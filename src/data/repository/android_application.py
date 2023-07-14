@@ -7,7 +7,7 @@ from fastapi import Depends
 from androguard.core.bytecodes.apk import APK
 from keras.models import load_model
 from src.domain.data.model import AndroidApplicationDetails
-from src.domain.data.model.model import MODEL_INPUT_FORMAT_APK, MODEL_SOURCE_TYPE_HDF5
+from src.domain.data.model.model import MODEL_INPUT_FORMAT_APK, MODEL_SOURCE_TYPE_HDF5, ModelState
 from src.domain.util import InvalidArgumentException
 from src.data.local import AndroidApplicationLocalDataSource
 from src.data.local.document import as_android_application, as_android_application_details
@@ -61,7 +61,11 @@ class AndroidApplicationRepository:
         return str(object=document_id)
 
     async def _get_malware_type(self, permissions: list, apis: list) -> Optional[str]:
-        models = await self._model_repository.get_models(input_format=MODEL_INPUT_FORMAT_APK, limit=1)
+        models = await self._model_repository.get_models(
+            input_format=MODEL_INPUT_FORMAT_APK,
+            state=ModelState.ACTIVATE,
+            limit=1
+        )
 
         if not models:
             return None
