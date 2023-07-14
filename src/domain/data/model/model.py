@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 
 
 MODEL_TYPE_HDF5 = 'HDF5/H5'
@@ -12,12 +13,19 @@ MODEL_SOURCE_TYPE_TFLITE = "tflite"
 MODEL_SOURCE_TYPE_PICKLE = "pickle"
 
 
+class ModelState(Enum):
+    TRAINING = "Training"
+    DEACTIVATE = "Deactivate"
+    ACTIVATE = "Activate"
+
+
 @dataclass
 class Model:
     id: str
     version: str
     type: str
     input_format: str
+    state: ModelState
     created_at: str
 
 

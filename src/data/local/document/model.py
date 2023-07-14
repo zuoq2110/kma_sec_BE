@@ -7,6 +7,7 @@ def as_model(document) -> Model:
         version=document['version'],
         type=document['type'],
         input_format=document['input_format'],
+        state=document['state'],
         created_at=document['created_at'].isoformat()
     )
 

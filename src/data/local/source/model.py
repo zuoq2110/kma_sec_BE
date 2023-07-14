@@ -30,15 +30,23 @@ class ModelLocalDataSource:
 
         save(data=model, path=join(dir, f"model.{format}"))
 
-    async def find_all(self, input_format: str = None, page: int = 1, limit: int = 20) -> Cursor:
+    async def find_all(
+        self,
+        input_format: Optional[str] = None,
+        state: Optional[str] = None,
+        page: int = 1,
+        limit: int = 20
+    ) -> Cursor:
         query = {}
+        fields = {"_id": 1, "version": 1, "type": 1, "input_format": 1, "state": 1, "created_at": 1}
         skip = max(0, (page - 1) * limit)
 
         if input_format != None:
             query['input_format'] = input_format
-
+        if state != None:
+            query['state'] = state
         return self._collection \
-            .find(query, {"_id": 1, "version": 1, "type": 1, "input_format": 1, "created_at": 1}) \
+            .find(query, fields) \
             .sort([('created_at', DESCENDING)]) \
             .skip(skip=skip) \
             .limit(limit=limit)
