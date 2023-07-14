@@ -6,7 +6,11 @@ from .infrastructure import router
 
 app = FastAPI(title="K-Security", version="1.0.0")
 
-app.add_middleware(middleware_class=CORSMiddleware, allow_origins=["*"])
+app.add_middleware(
+    middleware_class=CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "HEAD", "PATCH", "POST"]
+)
 
 app.include_router(router=router)
 
