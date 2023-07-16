@@ -1,14 +1,26 @@
 from typing import Annotated, Optional
-from fastapi import Depends
+from re import search
+from fastapi import Depends, UploadFile
 from src.domain.data.model import ModelInputFormat, ModelState, ModelSourceFormat
 from src.domain.util import InvalidArgumentException
 from src.data import ModelRepository
+from src.data.util import async_generator
 
 
 class ModelService:
 
     def __init__(self, model_repository: Annotated[ModelRepository, Depends()]) -> None:
         self.__model_repository = model_repository
+
+    async def create_model(self, version: str, model_id: str, dataset: list[UploadFile], epoch: int):
+        files = []
+
+        async for file in async_generator(data=dataset):
+            content = file.read()
+            label = search(r"_(.*?)[.]", file.filename).group(1)
+
+            files.append({"label": label, "content": await content})
+        await self.__model_repository.create_model(version, model_id, files, epoch)
 
     async def get_models(
         self,

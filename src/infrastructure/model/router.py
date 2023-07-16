@@ -1,5 +1,5 @@
 from typing import Annotated, Optional
-from fastapi import APIRouter, Request, Depends, HTTPException, status
+from fastapi import APIRouter, Form, UploadFile, Request, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from src.domain.util import InvalidArgumentException
 from .service import ModelService
@@ -7,6 +7,21 @@ from .service import ModelService
 
 router = APIRouter(prefix="/models", tags=["models"])
 
+
+@router.post(path="", status_code=status.HTTP_202_ACCEPTED)
+async def create_model(
+    version: Annotated[str, Form()],
+    model_id: Annotated[str, Form()],
+    dataset: list[UploadFile],
+    epoch: Annotated[int, Form()],
+    background_tasks: BackgroundTasks,
+    service: Annotated[ModelService, Depends()],
+):
+    background_tasks.add_task(service.create_model, version, model_id, dataset, epoch)
+    return {
+        "message": "Request to create model has been accepted.",
+        "data": None
+    }
 
 @router.get(path="", status_code=status.HTTP_200_OK)
 async def get_models(

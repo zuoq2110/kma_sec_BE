@@ -1,10 +1,12 @@
 from typing import Annotated, Optional
 from os.path import getsize
 from fastapi import Depends
+from tensorflow import lite
 from src.domain.data.model.model import *
 from src.domain.util import ResourcesNotFoundException, InvalidArgumentException
 from src.data.local import ModelLocalDataSource
 from src.data.local.document import as_model, as_model_details, as_model_dataset, as_model_history
+from src.data.util import train, async_generator, save
 
 
 class ModelRepository:
@@ -12,8 +14,86 @@ class ModelRepository:
     def __init__(self, local_data_source: Annotated[ModelLocalDataSource, Depends()]) -> None:
         self.__local_data_source = local_data_source
 
-    async def create_model(self, model: bytes, metadata: dict, format: str) -> str:
-        return await self.__local_data_source.insert(model=model, metadata=metadata, format=format)
+    async def create_model(
+        self,
+        version: str,
+        model_id: str,
+        dataset: list,
+        epochs: int
+    ):
+        model_details = await self.get_model_details(model_id=model_id)
+
+        if model_details is None or model_details.input_format == ModelInputFormat.PE:
+            return
+
+        model_dataset = await self.get_model_datasets(model_id=model_id)
+        input = await self.get_model_input(model_id=model_id)
+        output = model_details.output
+        metadata = {
+            "version": version,
+            "type": ModelType.HDF5.value,
+            "datasets": None,
+            "input": input,
+            "output": output,
+            "accuracy": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "history": None,
+            "input_format": model_details.input_format.value,
+            "state": ModelState.TRAINING.value
+        }
+        id = await self.__local_data_source.insert(
+            model=bytes([]),
+            metadata=metadata,
+            format=ModelSourceFormat.HDF5.value
+        )
+        id = str(object=id)
+
+        source = await self.get_model_source(model_id=model_id, format=ModelSourceFormat.HDF5)
+        labels = [data.label async for data in async_generator(data=model_dataset)]
+
+        await self.__train_model(
+            source=source,
+            model_id=id,
+            input=input,
+            output=output,
+            dataset=dataset,
+            epochs=epochs
+        )
+
+        async for file in async_generator(data=dataset):
+            label = file["label"]
+            index = labels.index(label)
+            model_dataset[index].quantity += 1
+        await self.__update_model_dataset(model_id=id, dataset=model_dataset)
+
+    async def __train_model(
+        self,
+        source: str,
+        model_id: str,
+        input: list,
+        output: list,
+        dataset,
+        epochs: int
+    ):
+        model, history, report = await train(
+            source=source,
+            input=input,
+            output=output,
+            dataset=dataset,
+            epochs=epochs
+        )
+        model_tflite = lite.TFLiteConverter.from_keras_model(model).convert()
+
+        model_source_keras = await self.get_model_source(model_id=model_id, format=ModelSourceFormat.HDF5)
+        model_source_tflite = await self.get_model_source(model_id=model_id, format=ModelSourceFormat.TFLITE)
+
+        model.save(filepath=model_source_keras)
+        await save(data=model_tflite, path=model_source_tflite)
+        await self.__update_model_history(model_id=model_id, history=history.history)
+        await self.__update_model_report(model_id=model_id, report=report)
+        await self.update_model_state(model_id=model_id, state=ModelState.DEACTIVATE)
 
     async def get_models(
         self,
@@ -62,6 +142,16 @@ class ModelRepository:
 
     async def get_model_input(self, model_id: str) -> Optional[list]:
         return await self.__local_data_source.find_input_by_id(model_id=model_id)
+
+    async def __update_model_dataset(self, model_id: str, dataset: list) -> bool:
+        dicts = [data.to_dict() for data in dataset]
+        return await self.__local_data_source.update_dataset_by_id(model_id=model_id, dataset=dicts)
+
+    async def __update_model_history(self, model_id: str, history: dict) -> bool:
+        return await self.__local_data_source.update_history_by_id(model_id=model_id, history=history)
+
+    async def __update_model_report(self, model_id: str, report: dict) -> bool:
+        return await self.__local_data_source.update_report_by_id(model_id=model_id, report=report)
 
     async def update_model_state(self, model_id: str, state: ModelState) -> bool:
         document = await self.__local_data_source.find_by_id(model_id=model_id)

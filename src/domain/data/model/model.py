@@ -49,6 +49,9 @@ class ModelDataset:
     label: str
     quantity: int
 
+    def to_dict(self):
+        return {"label": self.label, "quantity": self.quantity}
+
 
 @dataclass
 class ModelHistory:
