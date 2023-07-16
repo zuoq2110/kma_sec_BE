@@ -19,8 +19,16 @@ async def train(
 ):
     analyses = await __analyze(dataset=dataset)
     y, x = await __normalize(analyses=analyses, model_input=input, model_output=output)
+    val_y, val_x = __get_validate_dataset()
     model: Sequential = load_model(filepath=source)
-    history = model.fit(x=x, y=y, batch_size=16, epochs=epochs, verbose=0)
+    history = model.fit(
+        x=x,
+        y=y,
+        batch_size=16,
+        epochs=epochs,
+        verbose=0,
+        validation_data=(val_x, val_y)
+    )
     report = __evaluate(model=model)
 
     return model, history, report
@@ -79,6 +87,22 @@ async def __normalize_permissions(permissions: list):
         permission.split(".")[-1].upper() 
         async for permission in async_generator(data=permissions)
     ]
+
+
+def __get_validate_dataset():
+    val_path = join(sep, "data", "files", "dataset", "val.csv")
+    val_df = read_csv(filepath_or_buffer=val_path) \
+            .sample(frac=1) \
+            .drop(['type', 'file_name', 'package'], axis=1, errors="ignore")
+
+    val_y = np.array(val_df.iloc[:, 0])
+    val_y = to_categorical(val_y, 228)
+
+    val_x = np.array(val_df.iloc[:, 1:])
+    val_x = np.concatenate((val_x, np.zeros((val_x.shape[0], 28))), 1)
+    val_x = val_x.reshape(val_x.shape[0], 44, 44, 1)
+
+    return val_y, val_x
 
 
 def __evaluate(model: Sequential) -> dict:
