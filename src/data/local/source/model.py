@@ -1,8 +1,8 @@
 from typing import Annotated, Optional, Any
 from datetime import datetime, timezone
 from bson import ObjectId
-from os import sep
-from os.path import join, isfile
+from os import sep, makedirs
+from os.path import join, isfile, exists
 from fastapi import Depends
 from pymongo import DESCENDING
 from pymongo.database import Database
@@ -16,7 +16,7 @@ class ModelLocalDataSource:
     def __init__(self, database: Annotated[Database, Depends(get_database)]) -> None:
         self.__collection = database["models"]
 
-    async def insert(self, model: bytes, metadata: dict, format: str) -> ObjectId:
+    async def insert(self, model: Optional[bytes], metadata: dict, format: str) -> ObjectId:
         document = metadata.copy()
 
         # Save the model's document to the database
@@ -26,9 +26,13 @@ class ModelLocalDataSource:
             .inserted_id
 
         # Save the model's file
-        dir = join(sep, "data", "files", str(object=document_id))
+        dir = join(sep, "data", "files", "models", str(object=document_id))
 
-        save(data=model, path=join(dir, f"model.{format}"))
+        makedirs(name=dir, exist_ok=True)
+        if model != None:
+            await save(data=model, path=join(dir, f"model.{format}"))
+            await save(data=bytes([]), path=join(dir, "model.tflite"))
+        return document_id
 
     async def find_all(
         self,
@@ -100,9 +104,39 @@ class ModelLocalDataSource:
         if count != 1:
             return None
 
-        path = join(sep, "data", "files", model_id, f"model.{format}")
+        path = join(sep, "data", "files", "models", model_id, f"model.{format}")
 
         return path if isfile(path) else None
+
+    async def update_dataset_by_id(self, model_id: str, dataset: list) -> bool:
+        try:
+            id = ObjectId(oid=model_id)
+        except:
+            return False
+        filter = {"_id": id}
+        result = self.__collection.update_one(filter, { "$set": { "datasets": dataset } })
+
+        return result.modified_count > 0
+
+    async def update_history_by_id(self, model_id: str, history: dict) -> bool:
+        try:
+            id = ObjectId(oid=model_id)
+        except:
+            return False
+        filter = {"_id": id}
+        result = self.__collection.update_one(filter, { "$set": { "history": history } })
+
+        return result.modified_count > 0
+
+    async def update_report_by_id(self, model_id: str, report: dict) -> bool:
+        try:
+            id = ObjectId(oid=model_id)
+        except:
+            return False
+        filter = {"_id": id}
+        result = self.__collection.update_one(filter, { "$set": report })
+
+        return result.modified_count > 0
 
     async def update_state_by_id(self, model_id: str, state: str) -> bool:
         try:
@@ -113,3 +147,13 @@ class ModelLocalDataSource:
         result = self.__collection.update_one(filter, { "$set": { "state": state } })
 
         return result.modified_count > 0
+
+    async def update_source_by_id(self, model_id: str, source: bytes, format: str) -> bool:
+        # Save the model's file
+        dir = join(sep, "data", "files", model_id)
+
+        if not exists(path=dir):
+            return False
+
+        await save(data=source, path=join(dir, f"model.{format}"))
+        return True
