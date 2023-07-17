@@ -30,11 +30,6 @@ class WindowsApplicationRepository:
 
     async def create_application_analysis(self, raw: bytes) -> dict:
         analysis = await analyze(raw=raw)
-        document = await self.__local_data_source.find_by_md5(md5=analysis["md5"])
-
-        if document is not None:
-            return str(object=document["_id"])
-
         malware_type = await self.__get_application_malware_type(analysis=analysis)
         document_id = await self.__local_data_source.insert(metadata=analysis, malware_type=malware_type)
 
