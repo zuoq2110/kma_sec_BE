@@ -4,9 +4,13 @@ from typing import Annotated, Optional
 from os import sep, environ
 from os.path import join
 from fastapi import Depends
+from bson import ObjectId
 from keras.models import load_model
 from pandas import read_csv
+from src.domain.data.model import WindowsApplicationDetails
 from src.domain.data.model.model import ModelInputFormat, ModelState, ModelSourceFormat
+from src.data.local import WindowsApplicationLocalDataSource
+from src.data.local.document import as_windows_application, as_windows_application_details
 from src.data.util import analyze, normalize
 from .model import ModelRepository
 
@@ -16,14 +20,20 @@ environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 class WindowsApplicationRepository:
 
-    def __init__(self, model_repository: Annotated[ModelRepository, Depends()]):
+    def __init__(
+        self, 
+        local_data_source: Annotated[WindowsApplicationLocalDataSource, Depends()],
+        model_repository: Annotated[ModelRepository, Depends()]
+    ):
+        self.__local_data_source = local_data_source
         self.__model_repository = model_repository
 
     async def create_application_analysis(self, raw: bytes) -> dict:
         analysis = await analyze(raw=raw)
+        malware_type = await self.__get_application_malware_type(analysis=analysis)
+        document_id = await self.__local_data_source.insert(metadata=analysis, malware_type=malware_type)
 
-        analysis["malware_type"] = await self.__get_application_malware_type(analysis=analysis)
-        return analysis
+        return str(object=document_id)
 
     async def __get_application_malware_type(self, analysis: dict) -> Optional[str]:
         models = await self.__model_repository.get_models(
@@ -73,5 +83,14 @@ class WindowsApplicationRepository:
 
         return thresholds
 
-    async def get_application_analysis(self, analysis_id: str) -> Optional[dict]:
-        return None
+    async def get_analyses(self, page: int = 1, limit: int = 20) -> list:
+        cursor = await self.__local_data_source.find_all(page=page, limit=limit)
+        analyses = [as_windows_application(document=document) for document in cursor]
+
+        return analyses
+
+    async def get_analysis_details(self, analysis_id: str) -> Optional[WindowsApplicationDetails]:
+        id = ObjectId(oid=analysis_id)
+        document = await self.__local_data_source.find_by_id(document_id=id)
+
+        return None if document is None else as_windows_application_details(document=document)

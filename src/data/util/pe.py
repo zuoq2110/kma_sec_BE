@@ -3,6 +3,7 @@ from functools import reduce
 from operator import add
 from lief import parse, Binary
 from lief.logging import set_level, LOGGING_LEVEL
+from lief.PE import ALGORITHMS
 from src.domain.util import InvalidArgumentException
 from src.data.util import get_content, async_generator
 
@@ -27,6 +28,7 @@ async def analyze(raw: bytes):
     libraries = __get_libraries(binary=binary)
     tls = __get_tls(binary=binary)
 
+    analysis["md5"] = __get_md5(binary=binary)
     analysis["dos_header"] = await dos_header
     analysis["header_characteristics"] = __get_header_characteristics(binary=binary)
     analysis["header"] = await header
@@ -37,6 +39,13 @@ async def analyze(raw: bytes):
     analysis["libraries"] = await libraries
     analysis["tls"] = await tls
     return analysis
+
+
+def __get_md5(binary: Binary):
+    hash = binary.rich_header.hash(ALGORITHMS.MD5)
+    md5 = bytes(hash).hex()
+
+    return md5
 
 
 async def __get_dos_header(binary: Binary):
