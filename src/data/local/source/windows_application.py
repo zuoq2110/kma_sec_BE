@@ -33,3 +33,6 @@ class WindowsApplicationLocalDataSource:
 
     async def find_by_id(self, document_id: ObjectId) -> Optional[Any]:
         return self._collection.find_one({"_id": document_id})
+
+    async def find_by_md5(self, md5: str) -> Optional[Any]:
+        return self._collection.find_one({"md5": md5})
