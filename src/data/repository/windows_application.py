@@ -6,9 +6,9 @@ from os.path import join
 from fastapi import Depends
 from keras.models import load_model
 from pandas import read_csv
-from src.domain.data.model import WindowsApplicationDetails
 from src.domain.data.model.model import ModelInputFormat, ModelState, ModelSourceFormat
 from src.data.local import WindowsApplicationLocalDataSource
+from src.data.local.document import as_windows_application
 from src.data.util import analyze, normalize
 from .model import ModelRepository
 
@@ -87,7 +87,7 @@ class WindowsApplicationRepository:
         return thresholds
 
     async def get_analyses(self, page: int = 1, limit: int = 20) -> list:
-        return []
+        cursor = await self.__local_data_source.find_all(page=page, limit=limit)
+        analyses = [as_windows_application(document=document) for document in cursor]
 
-    async def get_analysis_details(self, analysis_id: str) -> Optional[WindowsApplicationDetails]:
-        return None
+        return analyses
