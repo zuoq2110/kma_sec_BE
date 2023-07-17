@@ -12,17 +12,20 @@ class WindowsService:
     async def create_application_analysis(self, file: UploadFile):
         raw = await file.read()
         try:
-            analysis = await self._windows_application_respository.create_application_analysis(raw=raw)
+            analysis_id = await self._windows_application_respository.create_application_analysis(raw=raw)
         except InvalidArgumentException as exception:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(object=exception)
             )
 
-        return analysis
+        return analysis_id
 
-    async def get_application_analysis_details(self, analysis_id: str):
-        analysis = await self._windows_application_respository.get_application_analysis(analysis_id=analysis_id)
+    async def get_analyses(self, page: int = 1, limit: int = 20):
+        return await self._windows_application_respository.get_analyses(page=page, limit=limit)
+
+    async def get_analysis_details(self, analysis_id: str):
+        analysis = await self._windows_application_respository.get_analysis_details(analysis_id=analysis_id)
 
         if analysis == None:
             raise HTTPException(
