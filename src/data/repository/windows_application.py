@@ -8,6 +8,7 @@ from keras.models import load_model
 from pandas import read_csv
 from src.domain.data.model import WindowsApplicationDetails
 from src.domain.data.model.model import ModelInputFormat, ModelState, ModelSourceFormat
+from src.data.local import WindowsApplicationLocalDataSource
 from src.data.util import analyze, normalize
 from .model import ModelRepository
 
@@ -17,14 +18,25 @@ environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 class WindowsApplicationRepository:
 
-    def __init__(self, model_repository: Annotated[ModelRepository, Depends()]):
+    def __init__(
+        self, 
+        local_data_source: Annotated[WindowsApplicationLocalDataSource, Depends()],
+        model_repository: Annotated[ModelRepository, Depends()]
+    ):
+        self.__local_data_source = local_data_source
         self.__model_repository = model_repository
 
     async def create_application_analysis(self, raw: bytes) -> dict:
         analysis = await analyze(raw=raw)
+        document = await self.__local_data_source.find_by_md5(md5=analysis["md5"])
 
-        analysis["malware_type"] = await self.__get_application_malware_type(analysis=analysis)
-        return analysis
+        if document is not None:
+            return str(object=document["_id"])
+
+        malware_type = await self.__get_application_malware_type(analysis=analysis)
+        document_id = await self.__local_data_source.insert(metadata=analysis, malware_type=malware_type)
+
+        return str(object=document_id)
 
     async def __get_application_malware_type(self, analysis: dict) -> Optional[str]:
         models = await self.__model_repository.get_models(
