@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional, Any
 from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import Depends
@@ -30,3 +30,6 @@ class WindowsApplicationLocalDataSource:
             .sort([('created_at', DESCENDING)]) \
             .skip(skip=skip) \
             .limit(limit=limit)
+
+    async def find_by_id(self, document_id: ObjectId) -> Optional[Any]:
+        return self._collection.find_one({"_id": document_id})

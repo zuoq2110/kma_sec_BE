@@ -4,11 +4,13 @@ from typing import Annotated, Optional
 from os import sep, environ
 from os.path import join
 from fastapi import Depends
+from bson import ObjectId
 from keras.models import load_model
 from pandas import read_csv
+from src.domain.data.model import WindowsApplicationDetails
 from src.domain.data.model.model import ModelInputFormat, ModelState, ModelSourceFormat
 from src.data.local import WindowsApplicationLocalDataSource
-from src.data.local.document import as_windows_application
+from src.data.local.document import as_windows_application, as_windows_application_details
 from src.data.util import analyze, normalize
 from .model import ModelRepository
 
@@ -91,3 +93,9 @@ class WindowsApplicationRepository:
         analyses = [as_windows_application(document=document) for document in cursor]
 
         return analyses
+
+    async def get_analysis_details(self, analysis_id: str) -> Optional[WindowsApplicationDetails]:
+        id = ObjectId(oid=analysis_id)
+        document = await self.__local_data_source.find_by_id(document_id=id)
+
+        return None if document is None else as_windows_application_details(document=document)
