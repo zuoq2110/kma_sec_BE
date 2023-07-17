@@ -20,7 +20,7 @@ def as_windows_application_details(document) -> WindowsApplicationDetails:
         optional_header=document['optional_header'],
         data_directories=document['data_directories'],
         sections=document['sections'],
-        _import=document['_import'],
+        _import=document['import'],
         libraries=document['libraries'],
         tls=document['tls'],
         malware_type=document['malware_type'],
