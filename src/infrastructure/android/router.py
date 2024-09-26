@@ -1,4 +1,5 @@
 from typing import Annotated
+import httpx
 from fastapi import APIRouter, Depends, UploadFile, HTTPException, status
 from .service import AndroidService
 
@@ -11,7 +12,9 @@ async def create_analysis(
     service: Annotated[AndroidService, Depends()]
 ):
     try:
+        
         analysis_id = await service.create_analysis(file=file)
+
     except Exception as exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

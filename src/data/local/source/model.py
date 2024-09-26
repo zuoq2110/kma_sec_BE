@@ -150,7 +150,7 @@ class ModelLocalDataSource:
 
     async def update_source_by_id(self, model_id: str, source: bytes, format: str) -> bool:
         # Save the model's file
-        dir = join(sep, "data", "files", model_id)
+        dir = join(sep, ".docker","data","files","files", model_id)
 
         if not exists(path=dir):
             return False
