@@ -90,7 +90,7 @@ async def __normalize_permissions(permissions: list):
 
 
 def __get_validate_dataset():
-    val_path = join(sep, "data", "files", "dataset", "val.csv")
+    val_path = join(sep, "data","files" ,"files", "dataset", "val.csv")
     val_df = read_csv(filepath_or_buffer=val_path) \
             .sample(frac=1) \
             .drop(['type', 'file_name', 'package'], axis=1, errors="ignore")
@@ -106,7 +106,7 @@ def __get_validate_dataset():
 
 
 def __evaluate(model: Sequential) -> dict:
-    test_path = join(sep, "data", "files", "dataset", "test.csv")
+    test_path = join(sep, "data","files", "files", "dataset", "test.csv")
     test_df = read_csv(filepath_or_buffer=test_path) \
             .sample(frac=1) \
             .drop(['type', 'file_name', 'package'], axis=1, errors="ignore")

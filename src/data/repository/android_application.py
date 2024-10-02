@@ -32,7 +32,7 @@ class AndroidApplicationRepository:
         self.__model_repository = model_repository
         self.__application_api_repository = application_api_repository
 
-    async def create_analysis(self, apk_bytes: bytes) -> str:
+    async def create_analysis(self, apk_bytes: bytes, token: Optional[str]) -> str:
         try:
             apk = APK(apk_bytes, raw=True)
         except:
@@ -55,7 +55,7 @@ class AndroidApplicationRepository:
             raise InvalidArgumentException("Unable to parse attachment!")
 
         malware_type = await self.__get_malware_type(permissions=metadata["permissions"], apis=apis)
-        document_id = await self.__local_data_source.insert(metadata=metadata, malware_type=malware_type)
+        document_id = await self.__local_data_source.insert(metadata=metadata, malware_type=malware_type, token=token if token else None)
 
         await self.__application_api_repository.create_application_apis(application_id=document_id, apis=apis)
         return str(object=document_id)
@@ -66,6 +66,7 @@ class AndroidApplicationRepository:
             state=ModelState.ACTIVATE,
             limit=1
         )
+        
 
         if not models:
             return None
@@ -73,11 +74,16 @@ class AndroidApplicationRepository:
         # Load model
         model_id = models[0].id
         model_details = await self.__model_repository.get_model_details(model_id=model_id)
+        
         model_source = await self.__model_repository.get_model_source(model_id=model_id, format=ModelSourceFormat.HDF5)
+        print("model_source",model_source)
+        
         model = load_model(filepath=model_source)
+        
 
         # Pre-processing
         x = await self.__normalize(permissions=permissions, apis=apis, model_id=model_id)
+       
 
         # Run model prediction with the input data.
         y = model(x)[0]
@@ -87,7 +93,7 @@ class AndroidApplicationRepository:
         model_output = model_details.output
         highest_probability = max(y)
         index = y.index(highest_probability)
-
+       
         return model_output[index]
 
     async def __normalize(self, permissions: list, apis: list, model_id: str):

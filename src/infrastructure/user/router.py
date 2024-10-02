@@ -11,9 +11,6 @@ from src.data.local.source.user import UserCreate
 router = APIRouter(prefix="/user", tags=["user"])
 
 
-@router.get("/token")
-def read_root():
-    return {"Hello": "World"}
 
 @router.post(path="/register", status_code=status.HTTP_201_CREATED)
 async def create_user(
@@ -31,13 +28,15 @@ async def create_user(
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     service: UserLocalDataSource = Depends()):
-    print("form data")
     result =service.login_for_access_token(form_data)
     return result
 
 @router.get(path="/verify-token/{token}")
 async def verify_user_token(token: str, user: Annotated[UserLocalDataSource, Depends()]):
-    await user.verify_user_token(token)
+    user.verify_token(token=token)
+    return {
+        "message": "Successfully!",
+    }
     
 @router.get("/existsByUsername")
 async def check_username(username: str, user: Annotated[UserLocalDataSource, Depends()]) -> bool:

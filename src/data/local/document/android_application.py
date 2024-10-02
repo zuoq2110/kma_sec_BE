@@ -9,7 +9,8 @@ def as_android_application(document) -> AndroidApplication:
         version_code=document['version_code'],
         version_name=document['version_name'],
         malware_type=document['malware_type'],
-        created_at=document['created_at'].isoformat()
+        created_at=document['created_at'].isoformat(),
+        created_by=str(document['created_by']) if 'created_by' in document else None
     )
 
 

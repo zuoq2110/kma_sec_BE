@@ -69,32 +69,24 @@ class UserLocalDataSource:
 
     def authenticate_user(self,username: str, password: str):
         user = self._collection.find_one({"username": username})
-        print("abc")
-        print(user)
         if not user:
             return False
         if not pwd_context.verify(password, user['password']):
             return False
-        print("user",user)
         return user
     
     def create_access_token(self,data: dict, expires_delta: timedelta | None = None):
-        print("đata", data)
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.now(timezone.utc) + expires_delta
         else:
             expire = datetime.now(timezone.utc) + timedelta(minutes=15)
         to_encode.update({"exp": expire})
-        print("to_encode",to_encode)
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-        print("jwt",encoded_jwt)
         return encoded_jwt
         
     def login_for_access_token(self,form_data):
-        print(form_data)
         user = self.authenticate_user(form_data.username, form_data.password)
-        print(user)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -106,9 +98,9 @@ class UserLocalDataSource:
         access_token = self.create_access_token(
             data ={"sub": user["username"]}, expires_delta=access_token_expires
         )
-        return {"access_token": access_token,"isAdmin": user["isAdmin"], "token_type": "bearer"}
+        return {"id": str(user["_id"]),"sub": user["username"],"access_token": access_token,"isAdmin": user["isAdmin"], "token_type": "bearer"}
     
-    def verify_token(token: str = Depends(oauth2_scheme)):
+    def verify_token(self,token: str = Depends(oauth2_scheme)):
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             username: str = payload.get("sub")
@@ -121,3 +113,5 @@ class UserLocalDataSource:
     async def check_username(self, username: str) -> bool:
         user = self._collection.find_one({"username": username})
         return user is not None
+    
+    
