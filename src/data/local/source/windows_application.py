@@ -6,6 +6,7 @@ from pymongo import DESCENDING
 from pymongo.database import Database
 from pymongo.cursor import Cursor
 from src.data.local import get_database
+import jwt
 
 
 class WindowsApplicationLocalDataSource:

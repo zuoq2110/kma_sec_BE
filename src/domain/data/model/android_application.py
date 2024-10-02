@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -10,6 +11,7 @@ class AndroidApplication:
     version_name: str
     malware_type: str
     created_at: str
+    created_by: Optional[str] = None
 
 
 @dataclass

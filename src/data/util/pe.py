@@ -164,6 +164,7 @@ async def __get_import(binary: Binary):
         elif field == "type":
             value = value.value
         _import[field] = value
+    print("import:",_import)
     return _import
 
 
@@ -172,6 +173,7 @@ async def __get_libraries(binary: Binary):
         return []
 
     fields = await get_content(path=join("libs", "lief", "library.txt"))
+    print("fields",fields)
     libraries = []
 
     size = len(binary.imports)
@@ -192,10 +194,13 @@ async def __get_libraries(binary: Binary):
 
 
 async def __get_library_entries(_import, limit: int = 5):
+    print("_import:",_import)
     fields = await get_content(path=join("libs", "lief", "library-entry.txt"))
+    print("fields",fields)
     library_entries = []
 
     size = len(_import.entries)
+    print("size",size)
     size = min(size, limit)
 
     async for i in async_generator(data=range(size)):
@@ -203,6 +208,7 @@ async def __get_library_entries(_import, limit: int = 5):
 
         async for field in async_generator(data=fields):
             library_entry[field] = getattr(_import.entries[i], field, None)
+            print("library_entry[field]",library_entry[field])
         library_entries.append(library_entry)
     return library_entries
 

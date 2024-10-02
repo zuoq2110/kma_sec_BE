@@ -9,7 +9,7 @@ from pymongo.database import Database
 from pymongo.cursor import Cursor
 from src.data.local import get_database
 from src.data.util import save
-
+import os
 
 class ModelLocalDataSource:
 
@@ -26,7 +26,7 @@ class ModelLocalDataSource:
             .inserted_id
 
         # Save the model's file
-        dir = join(sep, "data", "files", "models", str(object=document_id))
+        dir = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", str(object=document_id))
 
         makedirs(name=dir, exist_ok=True)
         if model != None:
@@ -96,6 +96,7 @@ class ModelLocalDataSource:
     async def find_source_by_id(self, model_id: str, format: str) -> Optional[str]:
         try:
             id = ObjectId(oid=model_id)
+            print("id",id)
         except:
             return None
 
@@ -104,7 +105,14 @@ class ModelLocalDataSource:
         if count != 1:
             return None
 
-        path = join(sep, "data", "files", "models", model_id, f"model.{format}")
+        # path = join(sep, "data","files", "models", model_id, f"model.{format}")
+        path = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", model_id, f"model.{format}")
+        # path = r"E:\Code\serverkma-sec\server\.docker\data\files\models\64b42eda7d41ef8ebdb4909b\model.h5"
+        if os.path.exists(path):
+            print("File exists at path:", path)
+            return path
+        else:
+            print("File does not exist at path:", path)
 
         return path if isfile(path) else None
 
@@ -150,7 +158,7 @@ class ModelLocalDataSource:
 
     async def update_source_by_id(self, model_id: str, source: bytes, format: str) -> bool:
         # Save the model's file
-        dir = join(sep, ".docker","data","files","files", model_id)
+        dir = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", model_id, f"model.{format}")
 
         if not exists(path=dir):
             return False
