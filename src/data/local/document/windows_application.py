@@ -6,7 +6,9 @@ def as_windows_application(document) -> WindowsApplication:
         id=str(object=document['_id']),
         md5=document['md5'],
         malware_type=document['malware_type'],
-        created_at=document['created_at'].isoformat()
+        created_at=document['created_at'].isoformat(),
+        created_by=str(document['created_by']) if 'created_by' in document else None
+        
     )
 
 

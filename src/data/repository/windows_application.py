@@ -28,10 +28,18 @@ class WindowsApplicationRepository:
         self.__local_data_source = local_data_source
         self.__model_repository = model_repository
 
-    async def create_application_analysis(self, raw: bytes) -> dict:
+    async def create_application_analysis(self, raw: bytes, token: Optional[str]) -> dict:
         analysis = await analyze(raw=raw)
+        document = await self.__local_data_source.find_by_md5(
+                md5=analysis["md5"],
+                token=token
+            )
+        if document is not None:
+                print("abc")
+                return str(object=document["_id"])
+
         malware_type = await self.__get_application_malware_type(analysis=analysis)
-        document_id = await self.__local_data_source.insert(metadata=analysis, malware_type=malware_type)
+        document_id = await self.__local_data_source.insert(metadata=analysis, malware_type=malware_type, token=token if token else None)
 
         return str(object=document_id)
 
@@ -52,11 +60,26 @@ class WindowsApplicationRepository:
         model = load_model(filepath=model_source)
 
         # Pre-processing
-        x = normalize(analysis=analysis)
+        # x = normalize(analysis=analysis)
+        x = await normalize(analysis=analysis)
+        x = [0 if elem is None else elem for elem in x]
 
         thresholds = self.__get_thresholds(model_id=model_id)
-        x = np.array(object=await x)
-        x = np.divide(x, thresholds, where=thresholds!=0, out=np.full_like(x, 0))
+        x = np.array(object= x)
+        # x = np.divide(x, thresholds, where=thresholds!=0, out=np.full_like(x, 0))
+        
+        if x is None:
+            raise ValueError("Variable 'x' should not be None.")
+        
+        if thresholds is None:
+            raise ValueError("Variable 'thresholds' should not be None.")
+
+
+        if x is not None and thresholds is not None:
+            x = np.divide(x, thresholds, where=thresholds != 0, out=np.full_like(x, 0))
+        else:
+    # Xử lý tình huống khi một trong hai giá trị là None
+            x = np.full_like(x, 0)  # Hoặc thực hiện một hành động khác phù hợp
 
         # Transform vector input to an 2D array (44x44)
         matrix_size = 27
@@ -77,7 +100,7 @@ class WindowsApplicationRepository:
         return model_output[index]
 
     def __get_thresholds(self, model_id: str):
-        thresholds_path = join(sep, "data","files", "files", "models", model_id, "thresholds.csv")
+        thresholds_path = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", model_id, "thresholds.csv")
         thresholds = read_csv(filepath_or_buffer=thresholds_path)["threshold"]
         thresholds = np.array(object=thresholds)
 
@@ -86,7 +109,7 @@ class WindowsApplicationRepository:
     async def get_analyses(self, page: int = 1, limit: int = 20) -> list:
         cursor = await self.__local_data_source.find_all(page=page, limit=limit)
         analyses = [as_windows_application(document=document) for document in cursor]
-
+        print(analyses)
         return analyses
 
     async def get_analysis_details(self, analysis_id: str) -> Optional[WindowsApplicationDetails]:

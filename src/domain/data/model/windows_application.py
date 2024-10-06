@@ -8,6 +8,7 @@ class WindowsApplication:
     md5: str
     malware_type: str
     created_at: str
+    created_by: Optional[str] = None
 
 
 @dataclass
