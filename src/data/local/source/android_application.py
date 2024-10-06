@@ -8,6 +8,7 @@ from pymongo.cursor import Cursor
 from src.data.local import get_database
 import jwt
 from .user import SECRET_KEY,ALGORITHM,oauth2_scheme
+from src.infrastructure.util.jwtService import decode_token
 
 class AndroidApplicationLocalDataSource:
 
@@ -22,18 +23,12 @@ class AndroidApplicationLocalDataSource:
         else:
             raise Exception("User not found")
         
-    def decode_token(self, token: str):
-        try:
-            # Giải mã token
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            return payload
-        except jwt.PyJWTError:
-            raise HTTPException(status_code=403, detail="Invalid token")
+    
 
     async def insert(self, metadata: dict, malware_type: str, token: Optional[str]) -> ObjectId:
         try:
             if token:  # Kiểm tra xem token có tồn tại không
-                payload = self.decode_token(token)
+                payload = decode_token(token)
             
                 sub = payload.get("sub")  # Lấy sub từ token
 
@@ -71,11 +66,21 @@ class AndroidApplicationLocalDataSource:
 
         return self._collection.find_one(filter)
 
-    async def find_by_certificate(self, package: str, certificate: dict) -> Optional[Any]:
+    async def find_by_certificate(self, package: str, certificate: dict, token) -> Optional[Any]:
+        created_by = None  # Khởi tạo biến created_by
+        
+        if token:  # Kiểm tra xem token có tồn tại không
+                payload = decode_token(token)
+            
+                sub = payload.get("sub")  # Lấy sub từ token
+
+            # Lấy ObjectId từ sub
+                created_by = await self.get_object_id_by_sub(sub)
         certificates = {"$elemMatch": certificate}
         filter = {
             "package": package,
-            "certificates": certificates
+            "certificates": certificates,
+            "created_by": created_by
         }
 
         return self._collection.find_one(filter)

@@ -2,6 +2,8 @@ from typing import Annotated
 from fastapi import Depends, UploadFile, HTTPException, status
 from src.data import WindowsApplicationRepository
 from src.domain.util import InvalidArgumentException
+from src.data.local.source.user import oauth2_scheme
+from typing import Optional
 
 
 class WindowsService:
@@ -9,10 +11,10 @@ class WindowsService:
     def __init__(self, windows_application_respository: Annotated[WindowsApplicationRepository, Depends()]):
         self._windows_application_respository = windows_application_respository
 
-    async def create_application_analysis(self, file: UploadFile):
+    async def create_application_analysis(self, file: UploadFile, token:Optional[str] = Depends(oauth2_scheme)):
         raw = await file.read()
         try:
-            analysis_id = await self._windows_application_respository.create_application_analysis(raw=raw)
+            analysis_id = await self._windows_application_respository.create_application_analysis(raw=raw, token=token if token else None)
         except InvalidArgumentException as exception:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
