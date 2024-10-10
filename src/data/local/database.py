@@ -15,13 +15,13 @@ async def get_database() -> Generator[Database, None, None]:
     # uri = f'mongodb://{username}:{password}@{host}:{port}/{name}'
 
     #chỉ chạy test trên windows(mongo atlas)
-    # uri =f"mongodb+srv://{username}:{password}@cluster0.a7gbj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    uri =f"mongodb://root:sWn3lRo9jABGPr5db101F8gq3u8h0Lfm@42.112.213.93:27017/"
+    uri =f"mongodb+srv://zuoq2110:PdbbtRMGDnCfZoOG@cluster0.a7gbj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    # uri =f"mongodb://root:sWn3lRo9jABGPr5db101F8gq3u8h0Lfm@42.112.213.93:27017/"
     
 
     client =  MongoClient(uri)
     if client:
-        print("Kết nối thành công")
+        print("Kết nối thành công", client)
     else:
         print("Kết nối thất bại")
 
