@@ -5,6 +5,7 @@ from os import environ
 from bson import ObjectId
 from fastapi import Depends
 from androguard.core.bytecodes.apk import APK
+
 from keras.models import load_model
 from src.domain.data.model import AndroidApplicationDetails
 from src.domain.data.model.model import ModelInputFormat, ModelState, ModelSourceFormat
@@ -78,9 +79,10 @@ class AndroidApplicationRepository:
         model_details = await self.__model_repository.get_model_details(model_id=model_id)
         
         model_source = await self.__model_repository.get_model_source(model_id=model_id, format=ModelSourceFormat.HDF5)
-        print("model_source",model_source)
+        
         
         model = load_model(filepath=model_source)
+        print("model:",model)
         
 
         # Pre-processing
@@ -90,10 +92,13 @@ class AndroidApplicationRepository:
         # Run model prediction with the input data.
         y = model(x)[0]
         y = list(y)
+        print("y:",y)
 
         # Post-processing: find the digit that has the highest probability
         model_output = model_details.output
+        print('model_output:',model_output)
         highest_probability = max(y)
+        print('highest_probability:',highest_probability)
         index = y.index(highest_probability)
        
         return model_output[index]
