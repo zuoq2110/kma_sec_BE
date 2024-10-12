@@ -10,6 +10,7 @@ class ModelType(Enum):
 class ModelInputFormat(Enum):
     APK = "APK"
     PE = "PE"
+    PDF = "PDF"
 
 
 class ModelState(Enum):
