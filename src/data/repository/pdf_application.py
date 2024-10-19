@@ -111,9 +111,8 @@ class PdfApplicationRepository:
     async def feature_extraction(self,filepath):
         features = []
         attribute = {}
-        print("âfsa")
-        command_to_execute = 'python "E:\\Code\\serverkma-sec\\server\\src\\data\\repository\\pdfid.py" "' + filepath + '"'
-        print("abc")
+        command_to_execute = 'python "src\\data\\repository\\pdfid.py" "' + filepath + '"'
+
         stdout = Popen(command_to_execute, shell=True, stdout=PIPE).stdout
         print(stdout)
         output = stdout.readlines()

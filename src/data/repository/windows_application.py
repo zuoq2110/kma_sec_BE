@@ -100,7 +100,7 @@ class WindowsApplicationRepository:
         return model_output[index]
 
     def __get_thresholds(self, model_id: str):
-        thresholds_path = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", model_id, "thresholds.csv")
+        thresholds_path = join(".docker", "data", "files", "models", model_id, "thresholds.csv")
         thresholds = read_csv(filepath_or_buffer=thresholds_path)["threshold"]
         thresholds = np.array(object=thresholds)
 
