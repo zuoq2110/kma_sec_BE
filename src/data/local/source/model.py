@@ -26,7 +26,7 @@ class ModelLocalDataSource:
             .inserted_id
 
         # Save the model's file
-        dir = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", str(object=document_id))
+        dir = join(".docker", "data", "files", "models", str(object=document_id))
 
         makedirs(name=dir, exist_ok=True)
         if model != None:
@@ -106,8 +106,10 @@ class ModelLocalDataSource:
             return None
 
         # path = join(sep, "data","files", "models", model_id, f"model.{format}")
-        path = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", model_id, f"model.{format}")
-        # path = r"E:\Code\serverkma-sec\server\.docker\data\files\models\64b42eda7d41ef8ebdb4909b\model.h5"
+        # path = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", model_id, f"model.{format}")
+        path = join(".docker", "data", "files", "models", model_id,
+                    f"model.{format}")
+
         if os.path.exists(path):
             print("File exists at path:", path)
             return path
@@ -158,7 +160,9 @@ class ModelLocalDataSource:
 
     async def update_source_by_id(self, model_id: str, source: bytes, format: str) -> bool:
         # Save the model's file
-        dir = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", model_id, f"model.{format}")
+        # dir = join("E:","\Code","serverkma-sec","server", ".docker", "data", "files", "models", model_id, f"model.{format}")
+        dir = join(".docker", "data", "files", "models", model_id, f"model.{format}")
+
 
         if not exists(path=dir):
             return False
